@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3.13 manage.py makemigrations:*)",
+      "Bash(./venv/bin/python:*)",
+      "Bash(/Users/new/Desktop/Проекты/Lamis/backend-lamis/venv/bin/python3.13:*)",
+      "Bash(psql:*)",
+      "Bash(./venv/bin/pip install:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYyODcxODA2LCJpYXQiOjE3NjI4NjgyMDYsImp0aSI6IjEwOGRjMjA4OWY1YzQxNTliMTFiMDUwNmI2ZThkZDE4IiwidXNlcl9pZCI6IjEifQ.rsc6ugfnxhzF95SsOeT7hLOwM41Yp_OzS2s1vuE6CSc\")",
+      "Bash(git config:*)",
+      "Bash(git commit:*)",
+      "Bash(gh auth status:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
