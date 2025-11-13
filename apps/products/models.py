@@ -1,6 +1,6 @@
 """
 Product-related Models for LAMIS E-commerce
-Implements Brand → Category → Collection → Product hierarchy
+Implements Section → Category → Collection → Product hierarchy
 """
 
 from django.db import models
@@ -9,21 +9,60 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 
 
+class Section(models.Model):
+    """
+    Section Model (Мебель для ванной, Санфарфор, Смесители, etc.)
+
+    Fields:
+        id: Primary Key
+        name: Section name (unique)
+        slug: URL-friendly slug (auto-generated from name)
+        title: SEO title for section description
+        description: Optional section description
+        created_at: Timestamp when section was created
+    """
+
+    name = models.CharField(max_length=100, unique=True, db_index=True)
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
+    title = models.CharField(max_length=255, blank=True, null=True, help_text="SEO заголовок для описания раздела")
+    description = models.TextField(blank=True, null=True, help_text="Описание раздела (2-3 параграфа)")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'sections'
+        verbose_name = 'Section'
+        verbose_name_plural = 'Sections'
+        ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class Brand(models.Model):
     """
-    Brand Model (Lamis, Caizer, Blesk)
+    Brand Model (Производитель - Lamis, Caizer, Blesk, etc.)
+
+    КЛЮЧЕВОЙ УРОВЕНЬ после Section:
+    Section → Brand → Category → Collection/Type → Product
 
     Fields:
         id: Primary Key
         name: Brand name (unique)
         slug: URL-friendly slug (auto-generated from name)
         description: Optional brand description
+        image: Optional brand logo/image URL
         created_at: Timestamp when brand was created
     """
 
     name = models.CharField(max_length=100, unique=True, db_index=True)
     slug = models.SlugField(max_length=120, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
+    image = models.URLField(max_length=500, blank=True, null=True, help_text="URL логотипа бренда")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -45,18 +84,36 @@ class Category(models.Model):
     """
     Category Model (Мебель, Зеркала, Сантехника, Водонагреватели)
 
+    НОВАЯ АРХИТЕКТУРА: Category зависит от Section + Brand
+    Section → Brand → Category
+
     Fields:
         id: Primary Key
-        name: Category name (unique)
+        name: Category name
         slug: URL-friendly slug (auto-generated from name)
-        brands: Many-to-Many relationship with Brand
+        section: Foreign Key to Section (обязательно)
+        brand: Foreign Key to Brand (обязательно)
         description: Optional category description
         created_at: Timestamp when category was created
     """
 
-    name = models.CharField(max_length=150, unique=True, db_index=True)
-    slug = models.SlugField(max_length=180, unique=True, blank=True)
-    brands = models.ManyToManyField(Brand, through='BrandCategory', related_name='categories')
+    name = models.CharField(max_length=150, db_index=True)
+    slug = models.SlugField(max_length=180, blank=True)
+
+    # НОВЫЕ связи: Section + Brand
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name='categories',
+        help_text="Раздел каталога (Мебель для ванной, Санфарфор, etc.)"
+    )
+    brand = models.ForeignKey(
+        Brand,
+        on_delete=models.CASCADE,
+        related_name='categories',
+        help_text="Производитель (Lamis, Caizer, Blesk, etc.)"
+    )
+
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -64,7 +121,8 @@ class Category(models.Model):
         db_table = 'categories'
         verbose_name = 'Category'
         verbose_name_plural = 'Categories'
-        ordering = ['name']
+        ordering = ['section', 'brand', 'name']
+        unique_together = ('section', 'brand', 'slug')
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -72,47 +130,51 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
-
-
-class BrandCategory(models.Model):
-    """
-    Many-to-Many through table for Brand and Category
-    Allows a category to belong to multiple brands
-    """
-
-    brand = models.ForeignKey(Brand, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-
-    class Meta:
-        db_table = 'brand_categories'
-        unique_together = ('brand', 'category')
-        verbose_name = 'Brand Category'
-        verbose_name_plural = 'Brand Categories'
-
-    def __str__(self):
-        return f"{self.brand.name} - {self.category.name}"
+        # Показываем контекст в админке!
+        return f"{self.name} ({self.section.name}, {self.brand.name})"
 
 
 class Collection(models.Model):
     """
     Collection Model (Solo, Harmony, Lux, Premium, Eco, etc.)
-    Collections belong to a specific Brand and Category
+
+    НОВАЯ АРХИТЕКТУРА: Collection зависит от Brand + Category
+    Section → Brand → Category → Collection
 
     Fields:
         id: Primary Key
         name: Collection name
         slug: URL-friendly slug (auto-generated from name)
-        brand: Foreign Key to Brand
-        category: Foreign Key to Category
+        brand: Foreign Key to Brand (обязательно)
+        category: Foreign Key to Category (обязательно)
+        image: URL of collection image (from R2 storage)
         description: Optional collection description
         created_at: Timestamp when collection was created
     """
 
     name = models.CharField(max_length=150, db_index=True)
     slug = models.SlugField(max_length=180, blank=True)
-    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name='collections')
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='collections')
+
+    # НОВЫЕ связи: Brand + Category (section знаем через Category)
+    brand = models.ForeignKey(
+        Brand,
+        on_delete=models.CASCADE,
+        related_name='collections',
+        help_text="Производитель"
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name='collections',
+        help_text="Категория товаров"
+    )
+
+    image = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text="URL изображения коллекции (картинка с R2)"
+    )
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -121,7 +183,7 @@ class Collection(models.Model):
         verbose_name = 'Collection'
         verbose_name_plural = 'Collections'
         ordering = ['brand', 'category', 'name']
-        unique_together = ('brand', 'category', 'name')
+        unique_together = ('brand', 'category', 'slug')
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -129,22 +191,78 @@ class Collection(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.brand.name} - {self.category.name} - {self.name}"
+        # Показываем контекст!
+        return f"{self.name} ({self.category.name}, {self.brand.name})"
+
+
+class Type(models.Model):
+    """
+    Type Model (Вид) - Product type classification
+
+    НОВАЯ АРХИТЕКТУРА: Type зависит ТОЛЬКО от Category
+    Section → Brand → Category → Type
+    (section и brand знаем через Category)
+
+    Examples: Раковины, Унитазы, Писсуары, Биде
+
+    Fields:
+        id: Primary Key
+        name: Type name (Вид)
+        slug: URL-friendly slug (auto-generated from name)
+        category: Foreign Key to Category (обязательно)
+        description: Optional type description
+        created_at: Timestamp when type was created
+    """
+
+    name = models.CharField(max_length=150, db_index=True)
+    slug = models.SlugField(max_length=180, blank=True)
+
+    # ТОЛЬКО Category (section и brand знаем через category)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name='types',
+        help_text="Категория товаров"
+    )
+
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'types'
+        verbose_name = 'Type'
+        verbose_name_plural = 'Types'
+        ordering = ['category', 'name']
+        unique_together = ('category', 'slug')
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(f"{self.category.name}-{self.name}")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} ({self.category.name})"
 
 
 class Product(models.Model):
     """
     Product Model
 
+    НОВАЯ АРХИТЕКТУРА: Product ОБЯЗАТЕЛЬНО имеет brand
+    Section → Brand → Category → Collection/Type → Product
+
     Fields:
         id: Primary Key
         name: Product name
         slug: URL-friendly slug (unique, auto-generated from name)
         price: Product price (Decimal for precise currency handling)
-        brand: Foreign Key to Brand
-        category: Foreign Key to Category
+        section: Foreign Key to Section (обязательно)
+        brand: Foreign Key to Brand (обязательно) ← НОВОЕ!
+        category: Foreign Key to Category (обязательно)
         collection: Foreign Key to Collection (optional)
-        main_image_url: Main product image URL
+        type: Foreign Key to Type (optional)
+        main_image_url: Main product image URL (shown by default)
+        hover_image_url: Hover/render image URL (shown on hover)
         images: JSON array of additional image URLs
         colors: JSON array of color options [{name, hex}, ...]
         is_new: Flag for "Новинка" badge
@@ -161,16 +279,47 @@ class Product(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))]
     )
-    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name='products')
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
+
+    # Основные связи
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name='products',
+        help_text="Раздел каталога"
+    )
+    brand = models.ForeignKey(
+        Brand,
+        on_delete=models.CASCADE,
+        related_name='products',
+        help_text="Производитель (обязательно)"
+    )  # ← НОВОЕ! ОБЯЗАТЕЛЬНЫЙ БРЕНД!
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name='products',
+        help_text="Категория товаров"
+    )
+
+    # Опциональные связи
     collection = models.ForeignKey(
         Collection,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='products'
+        related_name='products',
+        help_text="Коллекция (опционально)"
     )
+    type = models.ForeignKey(
+        Type,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products',
+        help_text="Тип/Вид (опционально)"
+    )
+
     main_image_url = models.URLField(max_length=500)
+    hover_image_url = models.URLField(max_length=500, blank=True, null=True)
     images = models.JSONField(default=list, blank=True)
     colors = models.JSONField(default=list, blank=True)
     is_new = models.BooleanField(default=False, db_index=True)
@@ -184,9 +333,12 @@ class Product(models.Model):
         verbose_name = 'Product'
         verbose_name_plural = 'Products'
         ordering = ['-created_at']
+        unique_together = ('section', 'brand', 'slug')
         indexes = [
-            models.Index(fields=['brand', 'category']),
-            models.Index(fields=['brand', 'category', 'collection']),
+            models.Index(fields=['section', 'brand']),
+            models.Index(fields=['section', 'brand', 'category']),
+            models.Index(fields=['section', 'brand', 'category', 'collection']),
+            models.Index(fields=['section', 'brand', 'category', 'type']),
             models.Index(fields=['is_new', 'is_on_sale']),
         ]
 
@@ -202,4 +354,4 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.brand.name})"

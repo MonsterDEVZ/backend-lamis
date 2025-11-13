@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     # Local apps
     "apps.products",
     "apps.authentication",
-    "apps.logs",
     "apps.uploads",
 ]
 
@@ -73,17 +72,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Database - PostgreSQL
+# Database - SQLite (temporary for development)
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config('DB_NAME', default='lamis_db'),
-        "USER": config('DB_USER', default='lamis_user'),
-        "PASSWORD": config('DB_PASSWORD', default='lamis_password'),
-        "HOST": config('DB_HOST', default='localhost'),
-        "PORT": config('DB_PORT', default='5432'),
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+# Database - PostgreSQL (uncomment for production)
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": config('DB_NAME', default='lamis_db'),
+#         "USER": config('DB_USER', default='lamis_user'),
+#         "PASSWORD": config('DB_PASSWORD', default='lamis_password'),
+#         "HOST": config('DB_HOST', default='localhost'),
+#         "PORT": config('DB_PORT', default='5432'),
+#     }
+# }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -135,7 +142,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'config.pagination.CustomPageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }

@@ -17,7 +17,7 @@ urlpatterns = [
     path('api/v1/auth/', include('apps.authentication.urls')),
 
     # API v1 - Admin endpoints
-    path('api/v1/admin/', include('apps.logs.urls')),
+    # path('api/v1/admin/', include('apps.logs.urls')),  # Disabled - apps.logs doesn't exist
     path('api/v1/admin/', include('apps.uploads.urls')),
 
     # API Documentation (Swagger/OpenAPI)

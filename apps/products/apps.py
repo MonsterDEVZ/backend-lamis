@@ -7,4 +7,4 @@ class ProductsConfig(AppConfig):
     verbose_name = 'Products'
 
     def ready(self):
-        import apps.products.signals  # noqa
+        pass  # import apps.products.signals  # noqa - disabled due to missing apps.logs
