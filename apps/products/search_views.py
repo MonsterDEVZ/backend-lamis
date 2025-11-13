@@ -109,7 +109,7 @@ class SearchViewSet(viewsets.ViewSet):
                 'collection_id': collection.id,
                 'type_id': None,
                 'slug': collection.slug,
-                'image': collection.image.url if collection.image else None
+                'image': collection.image if collection.image else None
             })
 
         return results
@@ -226,7 +226,7 @@ class SearchViewSet(viewsets.ViewSet):
                 'collection_id': None,
                 'type_id': None,
                 'slug': brand.slug,
-                'image': brand.image.url if brand.image else None
+                'image': brand.image if brand.image else None
             })
 
         return results
