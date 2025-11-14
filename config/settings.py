@@ -84,20 +84,24 @@ if DATABASE_URL:
         "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
 else:
-    # Fallback to PostgreSQL with individual env vars or SQLite for local dev
-    if config('DB_HOST', default=None):
+    # Fallback for local development
+    # Use PostgreSQL if DB_HOST is explicitly set, otherwise use SQLite
+    db_host = config('DB_HOST', default=None)
+
+    if db_host and db_host != 'localhost':
+        # Use PostgreSQL with explicit configuration
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
                 "NAME": config('DB_NAME', default='lamis_db'),
                 "USER": config('DB_USER', default='lamis_user'),
                 "PASSWORD": config('DB_PASSWORD', default='lamis_password'),
-                "HOST": config('DB_HOST', default='localhost'),
+                "HOST": db_host,
                 "PORT": config('DB_PORT', default='5432'),
             }
         }
     else:
-        # SQLite for local development
+        # SQLite for local development and build phase
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.sqlite3",
