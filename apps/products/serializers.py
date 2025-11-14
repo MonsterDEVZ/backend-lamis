@@ -45,12 +45,15 @@ class CollectionSerializer(serializers.ModelSerializer):
     """
     brand_name = serializers.CharField(source='brand.name', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
+    section = serializers.IntegerField(source='category.section.id', read_only=True)
+    section_name = serializers.CharField(source='category.section.name', read_only=True)
 
     class Meta:
         model = Collection
         fields = [
             'id', 'name', 'slug', 'brand', 'brand_name',
-            'category', 'category_name', 'image', 'description', 'created_at'
+            'category', 'category_name', 'section', 'section_name',
+            'image', 'description', 'created_at'
         ]
         read_only_fields = ['id', 'slug', 'created_at']
 
