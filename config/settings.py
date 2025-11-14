@@ -205,6 +205,11 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Logging
+import os
+
+# Determine if we should use file logging (only in local development)
+USE_FILE_LOGGING = os.environ.get('RAILWAY_ENVIRONMENT') is None
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -219,22 +224,32 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
-            'formatter': 'verbose',
-        },
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
         'apps': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,
         },
     },
 }
+
+# Add file handler only in local development
+if USE_FILE_LOGGING:
+    import os
+    log_dir = BASE_DIR / 'logs'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    LOGGING['handlers']['file'] = {
+        'class': 'logging.FileHandler',
+        'filename': BASE_DIR / 'logs' / 'django.log',
+        'formatter': 'verbose',
+    }
+    LOGGING['loggers']['django']['handlers'].append('file')
+    LOGGING['loggers']['apps']['handlers'].append('file')
