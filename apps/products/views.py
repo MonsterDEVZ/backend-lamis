@@ -346,17 +346,22 @@ class TypeViewSet(viewsets.ModelViewSet):
 class ProductViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Product model
-    Product has brand field but it's not used for filtering
+    SIMPLIFIED ARCHITECTURE: Backend filters only by section, frontend handles the rest
+
+    NEW STRATEGY:
+    - Backend returns ALL products for a section (e.g., all Санфарфор products)
+    - Frontend filters by category/collection/type in memory
+    - Benefits: No double-firing, instant filtering, better UX
 
     Public endpoints (GET):
     - list: GET /api/v1/products/
     - retrieve: GET /api/v1/products/{slug}/
 
-    Four-level filtering:
-    - ?section_id=1
-    - ?section_id=1&category_id=2
-    - ?section_id=1&category_id=2&collection_id=3
-    - ?section_id=1&category_id=2&type_id=4
+    Section filtering (ONLY backend filter):
+    - ?section_id=1  → Returns ALL products for section 1
+    - ?section_slug=mebel-dlia-vannoi  → Returns ALL products for section
+
+    Flag filters (lightweight, done on backend):
     - ?is_new=true
     - ?is_on_sale=true
     - ?min_price=1000&max_price=5000
@@ -371,7 +376,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     - ?ordering=name
 
     Pagination:
-    - ?page=1&limit=20
+    - ?page=1&limit=100  (larger limit since filtering done on frontend)
 
     Admin endpoints (POST/PUT/PATCH/DELETE):
     - create: POST /api/v1/admin/products/

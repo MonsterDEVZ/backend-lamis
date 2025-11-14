@@ -10,25 +10,18 @@ from apps.products.models import Product, Brand, Category, Collection, Type
 class ProductFilter(filters.FilterSet):
     """
     FilterSet for Product model
-    Supports filtering by section, category, collection, type, and flags
-    Supports both ID (number) and slug (string) filtering
+    SIMPLIFIED: Only filters by section - all other filtering done on frontend
+
+    NEW ARCHITECTURE:
+    - Backend returns ALL products for a section
+    - Frontend filters by category/collection/type in memory
+    - This eliminates double-firing and improves UX
     """
-    # Support both ID and slug for section
+    # ONLY section filtering
     section_id = filters.NumberFilter(field_name='section__id')
     section_slug = filters.CharFilter(field_name='section__slug')
 
-    # Support both ID and slug for category
-    category_id = filters.CharFilter(method='filter_category')
-    category_slug = filters.CharFilter(field_name='category__slug')
-
-    # Support both ID and slug for collection
-    collection_id = filters.CharFilter(method='filter_collection')
-    collection_slug = filters.CharFilter(field_name='collection__slug')
-
-    # Support both ID and slug for type
-    type_id = filters.CharFilter(method='filter_type')
-    type_slug = filters.CharFilter(field_name='type__slug')
-
+    # Keep flag filters (lightweight, useful for backend)
     is_new = filters.BooleanFilter(field_name='is_new')
     is_on_sale = filters.BooleanFilter(field_name='is_on_sale')
     min_price = filters.NumberFilter(field_name='price', lookup_expr='gte')
@@ -38,30 +31,9 @@ class ProductFilter(filters.FilterSet):
         model = Product
         fields = [
             'section_id', 'section_slug',
-            'category_id', 'category_slug',
-            'collection_id', 'collection_slug',
-            'type_id', 'type_slug',
             'is_new', 'is_on_sale',
             'min_price', 'max_price'
         ]
-
-    def filter_category(self, queryset, name, value):
-        """Filter by category ID or slug"""
-        if value.isdigit():
-            return queryset.filter(category__id=int(value))
-        return queryset.filter(category__slug=value)
-
-    def filter_collection(self, queryset, name, value):
-        """Filter by collection ID or slug"""
-        if value.isdigit():
-            return queryset.filter(collection__id=int(value))
-        return queryset.filter(collection__slug=value)
-
-    def filter_type(self, queryset, name, value):
-        """Filter by type ID or slug"""
-        if value.isdigit():
-            return queryset.filter(type__id=int(value))
-        return queryset.filter(type__slug=value)
 
 
 class BrandFilter(filters.FilterSet):
