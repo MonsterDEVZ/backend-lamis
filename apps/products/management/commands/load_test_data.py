@@ -177,7 +177,7 @@ class Command(BaseCommand):
         return categories
 
     def create_collections(self, sections, brands, categories):
-        """Create 10 collections for 'Мебель для ванной' section"""
+        """Create 10 collections for 'Мебель для ванной' section across ALL categories"""
         collections_data = [
             'Akcent',
             'Omega',
@@ -194,27 +194,28 @@ class Command(BaseCommand):
         section_furniture = sections['Мебель для ванной']
         collections = []
 
-        # Create collections for each brand in Мебель для ванной section
+        # Create collections for each brand + category combination in Мебель для ванной
         for brand_name, brand in brands.items():
-            # Get a category for this section + brand
-            category = Category.objects.filter(
+            # Get ALL categories for this section + brand
+            section_categories = Category.objects.filter(
                 section=section_furniture,
                 brand=brand
-            ).first()
+            )
 
-            if category:
+            # Create collections for EACH category (not just first one!)
+            for category in section_categories:
                 for collection_name in collections_data:
                     collection, created = Collection.objects.update_or_create(
                         name=collection_name,
                         brand=brand,
                         category=category,
                         defaults={
-                            'description': f'Коллекция {collection_name} от {brand_name}'
+                            'description': f'Коллекция {collection_name} от {brand_name} для {category.name}'
                         }
                     )
                     collections.append(collection)
-                    status = '✓ Создана' if created else '↻ Обновлена'
-                    self.stdout.write(f'  {status}: {collection.name} ({brand.name})')
+                    status = '✓' if created else '↻'
+                    self.stdout.write(f'  {status} {collection.name} ({brand.name} → {category.name})')
 
         return collections
 
