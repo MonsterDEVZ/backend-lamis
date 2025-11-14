@@ -16,7 +16,31 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-producti
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
+# ALLOWED_HOSTS configuration
+# Railway automatically provides RAILWAY_PUBLIC_DOMAIN and RAILWAY_STATIC_URL
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*').split(',')
+
+# Auto-detect Railway domain
+railway_domain = config('RAILWAY_PUBLIC_DOMAIN', default=None)
+railway_static_url = config('RAILWAY_STATIC_URL', default=None)
+
+# Add Railway domains automatically
+if railway_domain and railway_domain not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(railway_domain)
+
+if railway_static_url:
+    # Extract domain from URL like https://backend-lamis-production.up.railway.app
+    import re
+    match = re.search(r'https?://([^/]+)', railway_static_url)
+    if match:
+        domain = match.group(1)
+        if domain not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(domain)
+
+# Always allow Railway's default domain pattern
+if any('railway.app' in host for host in ALLOWED_HOSTS) is False:
+    # Add common Railway domain pattern
+    ALLOWED_HOSTS.append('backend-lamis-production.up.railway.app')
 
 # Application definition
 
