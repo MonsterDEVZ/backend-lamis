@@ -263,102 +263,201 @@ class Command(BaseCommand):
         return collections
 
     def create_types(self, sections, brands, categories):
-        """Create types for Санфарфор categories (Унитазы, Раковины, Биде, Писсуары)
+        """Create types for ALL categories
 
-        Типы - это способ монтажа: Напольный, Подвесной, Настенный, Встраиваемый
+        Типы - это способ монтажа/размера/установки для разных категорий товаров
         """
-        # Определяем типы для каждой категории Санфарфора
+        # Определяем типы для каждой категории
+        # Формат: 'Название категории': ['Тип1', 'Тип2', ...]
         types_data = {
+            # САНФАРФОР
             'Унитазы': ['Напольный', 'Подвесной', 'Приставной', 'Унитаз-компакт'],
             'Раковины': ['Накладная', 'Встраиваемая', 'Подвесная', 'На пьедестале'],
             'Биде': ['Напольное', 'Подвесное', 'Приставное'],
             'Писсуары': ['Настенный', 'Напольный'],
-        }
 
-        section_sanfarfor = sections.get('Санфарфор')
-        brand_caizer = brands.get('Caizer')
+            # МЕБЕЛЬ ДЛЯ ВАННОЙ
+            'Тумбы': ['Напольная', 'Подвесная', 'Угловая'],
+            'Пеналы': ['Узкий', 'Средний', 'Широкий', 'Подвесной', 'Напольный'],
+            'Шкафы': ['Напольный', 'Подвесной', 'Угловой'],
+
+            # ЗЕРКАЛА (категории уже специфичны, типы опциональны)
+            'Зеркала с подсветкой': ['С сенсорным управлением', 'С кнопкой', 'С димером'],
+            'Зеркальные шкафы': ['Одностворчатый', 'Двустворчатый', 'Трехстворчатый'],
+
+            # СМЕСИТЕЛИ (категории уже специфичны, минимум типов)
+            'Смесители для раковины': ['Однорычажный', 'Двухвентильный', 'Термостатический'],
+            'Смесители для ванны': ['Однорычажный', 'Двухвентильный', 'Термостатический'],
+            'Смесители для душа': ['Однорычажный', 'Термостатический'],
+
+            # ДУШЕВЫЕ КАБИНЫ (категории специфичны)
+            'Душевые уголки': ['Квадратный', 'Прямоугольный', 'Угловой'],
+            'Поддоны': ['Низкий', 'Средний', 'Глубокий'],
+
+            # ВОДОНАГРЕВАТЕЛИ (категории специфичны)
+            'Накопительные': ['Вертикальный', 'Горизонтальный', 'Универсальный'],
+            'Проточные': ['3-5 кВт', '5-7 кВт', '7+ кВт'],
+        }
 
         types = []
 
-        if section_sanfarfor and brand_caizer:
-            for category_name, type_names in types_data.items():
-                # Найти категорию Санфарфор → Caizer → category_name
-                try:
-                    category = Category.objects.get(
-                        name=category_name,
-                        section=section_sanfarfor,
-                        brand=brand_caizer
+        # Iterate through ALL categories in database
+        for category_name, type_names in types_data.items():
+            # Find ALL categories with this name (may be multiple for different brands)
+            matching_categories = Category.objects.filter(name=category_name)
+
+            if not matching_categories.exists():
+                self.stdout.write(self.style.WARNING(f'  ⚠ Категория "{category_name}" не найдена'))
+                continue
+
+            # Create types for EACH matching category
+            for category in matching_categories:
+                for type_name in type_names:
+                    type_obj, created = Type.objects.update_or_create(
+                        name=type_name,
+                        category=category,
+                        defaults={
+                            'description': f'{type_name} {category_name.lower()}'
+                        }
                     )
-
-                    for type_name in type_names:
-                        type_obj, created = Type.objects.update_or_create(
-                            name=type_name,
-                            category=category,
-                            defaults={
-                                'description': f'{type_name} {category_name.lower()}'
-                            }
-                        )
-                        types.append(type_obj)
-                        status = '✓' if created else '↻'
-                        self.stdout.write(f'  {status} {category.name} → {type_obj.name}')
-
-                except Category.DoesNotExist:
-                    self.stdout.write(self.style.WARNING(f'  ⚠ Категория "{category_name}" не найдена'))
+                    types.append(type_obj)
+                    status = '✓' if created else '↻'
+                    self.stdout.write(f'  {status} {category.section.name} → {category.name} → {type_obj.name}')
 
         return types
 
-    def get_type_id_for_product(self, product_name, category_name):
+    def get_type_for_product(self, product_name, category):
         """
-        Определить type_id по названию товара и категории
+        Определить type по названию товара и категории
         Smart mapping: анализирует название товара для определения типа
+        Возвращает Type object или None
         """
         name_lower = product_name.lower()
+        category_name = category.name
 
-        # РАКОВИНЫ
-        if category_name == 'Раковины':
-            if 'встроен' in name_lower or 'встраива' in name_lower:
-                return 6  # Встраиваемая
-            elif 'накладн' in name_lower:
-                return 5  # Накладная
-            elif 'подвес' in name_lower:
-                return 7  # Подвесная
-            elif 'пьедестал' in name_lower:
-                return 8  # На пьедестале
-            else:
-                return 7  # Подвесная (по умолчанию)
+        # Получить все типы для этой категории
+        available_types = list(category.types.all())
+        if not available_types:
+            return None
 
-        # УНИТАЗЫ
-        elif category_name == 'Унитазы':
-            if 'подвес' in name_lower:
-                return 2  # Подвесной
-            elif 'компакт' in name_lower:
-                return 4  # Унитаз-компакт
-            elif 'приставн' in name_lower:
-                return 3  # Приставной
-            elif 'напольн' in name_lower:
-                return 1  # Напольный
-            else:
-                return 1  # Напольный (по умолчанию)
+        # Mapping keywords to type names for smart detection
+        type_keywords = {
+            # САНФАРФОР
+            'Раковины': {
+                'встраива': 'Встраиваемая',
+                'встроен': 'Встраиваемая',
+                'накладн': 'Накладная',
+                'подвес': 'Подвесная',
+                'пьедестал': 'На пьедестале',
+            },
+            'Унитазы': {
+                'подвес': 'Подвесной',
+                'компакт': 'Унитаз-компакт',
+                'приставн': 'Приставной',
+                'напольн': 'Напольный',
+            },
+            'Биде': {
+                'подвес': 'Подвесное',
+                'приставн': 'Приставное',
+                'напольн': 'Напольное',
+            },
+            'Писсуары': {
+                'настенн': 'Настенный',
+                'настен': 'Настенный',
+                'напольн': 'Напольный',
+            },
 
-        # БИДЕ
-        elif category_name == 'Биде':
-            if 'подвес' in name_lower:
-                return 10  # Подвесное
-            elif 'приставн' in name_lower:
-                return 11  # Приставное
-            elif 'напольн' in name_lower:
-                return 9  # Напольное
-            else:
-                return 9  # Напольное (по умолчанию)
+            # МЕБЕЛЬ ДЛЯ ВАННОЙ
+            'Тумбы': {
+                'подвес': 'Подвесная',
+                'напольн': 'Напольная',
+                'углов': 'Угловая',
+            },
+            'Пеналы': {
+                'подвес': 'Подвесной',
+                'напольн': 'Напольный',
+                'узк': 'Узкий',
+                'средн': 'Средний',
+                'широк': 'Широкий',
+                'высок': 'Широкий',  # высокий = широкий
+            },
+            'Шкафы': {
+                'подвес': 'Подвесной',
+                'напольн': 'Напольный',
+                'углов': 'Угловой',
+            },
 
-        # ПИССУАРЫ
-        elif category_name == 'Писсуары':
-            if 'настенн' in name_lower or 'настен' in name_lower:
-                return 12  # Настенный
-            elif 'напольн' in name_lower:
-                return 13  # Напольный
-            else:
-                return 12  # Настенный (по умолчанию)
+            # ЗЕРКАЛА
+            'Зеркала с подсветкой': {
+                'сенсор': 'С сенсорным управлением',
+                'кнопк': 'С кнопкой',
+                'димер': 'С димером',
+            },
+            'Зеркальные шкафы': {
+                'одно': 'Одностворчатый',
+                'дву': 'Двустворчатый',
+                'трех': 'Трехстворчатый',
+            },
+
+            # СМЕСИТЕЛИ
+            'Смесители для раковины': {
+                'однорычажн': 'Однорычажный',
+                'двухвент': 'Двухвентильный',
+                'термостат': 'Термостатический',
+            },
+            'Смесители для ванны': {
+                'однорычажн': 'Однорычажный',
+                'двухвент': 'Двухвентильный',
+                'термостат': 'Термостатический',
+            },
+            'Смесители для душа': {
+                'однорычажн': 'Однорычажный',
+                'термостат': 'Термостатический',
+            },
+
+            # ДУШЕВЫЕ КАБИНЫ
+            'Душевые уголки': {
+                'квадрат': 'Квадратный',
+                'прямоуг': 'Прямоугольный',
+                'углов': 'Угловой',
+            },
+            'Поддоны': {
+                'низк': 'Низкий',
+                'средн': 'Средний',
+                'глубок': 'Глубокий',
+            },
+
+            # ВОДОНАГРЕВАТЕЛИ
+            'Накопительные': {
+                'вертикал': 'Вертикальный',
+                'горизонтал': 'Горизонтальный',
+                'универсал': 'Универсальный',
+            },
+            'Проточные': {
+                '3': '3-5 кВт',
+                '4': '3-5 кВт',
+                '5': '5-7 кВт',
+                '6': '5-7 кВт',
+                '7': '7+ кВт',
+                '8': '7+ кВт',
+            },
+        }
+
+        # Get keywords for this category
+        keywords = type_keywords.get(category_name, {})
+
+        # Try to find matching type by keyword
+        for keyword, type_name in keywords.items():
+            if keyword in name_lower:
+                # Find type object with this name
+                for type_obj in available_types:
+                    if type_obj.name == type_name:
+                        return type_obj
+
+        # If no match found, return random type (fallback)
+        if available_types:
+            import random
+            return random.choice(available_types)
 
         return None
 
@@ -559,8 +658,8 @@ class Command(BaseCommand):
             is_new = random.random() < 0.3  # 30% chance
             is_on_sale = random.random() < 0.2  # 20% chance
 
-            # Get type_id using smart mapping (only for Санфарфор categories)
-            type_id = self.get_type_id_for_product(product_data['name'], category.name)
+            # Get type using smart mapping (works for ALL categories!)
+            type_obj = self.get_type_for_product(product_data['name'], category)
 
             product, created = Product.objects.update_or_create(
                 name=product_data['name'],
@@ -569,7 +668,7 @@ class Command(BaseCommand):
                 defaults={
                     'category': category,
                     'collection': collection,
-                    'type_id': type_id,  # Add type_id here!
+                    'type': type_obj,  # Add type object here!
                     'price': Decimal(str(product_data['price'])),
                     'main_image_url': main_image,
                     'hover_image_url': hover_image,
@@ -591,7 +690,7 @@ class Command(BaseCommand):
 
             # Add type info if assigned
             type_info = ''
-            if type_id and product.type:
+            if product.type:
                 type_info = f' [Тип: {product.type.name}]'
 
             self.stdout.write(f'  {status}: {product.name} {flags_str}{type_info}')
