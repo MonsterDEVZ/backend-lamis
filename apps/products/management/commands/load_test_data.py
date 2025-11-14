@@ -19,10 +19,28 @@ import random
 class Command(BaseCommand):
     help = 'Load comprehensive test data into the database'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--flush',
+            action='store_true',
+            help='Delete all existing data before loading test data'
+        )
+
     def handle(self, *args, **kwargs):
         self.stdout.write(self.style.HTTP_INFO('\n' + '='*60))
         self.stdout.write(self.style.HTTP_INFO('  ЗАГРУЗКА ТЕСТОВЫХ ДАННЫХ В БД'))
         self.stdout.write(self.style.HTTP_INFO('='*60 + '\n'))
+
+        # Optional: Flush existing data
+        if kwargs['flush']:
+            self.stdout.write(self.style.WARNING('\nОчистка существующих данных...'))
+            Product.objects.all().delete()
+            Collection.objects.all().delete()
+            Type.objects.all().delete()
+            Category.objects.all().delete()
+            Section.objects.all().delete()
+            Brand.objects.all().delete()
+            self.stdout.write(self.style.SUCCESS('✓ Все данные удалены\n'))
 
         # Step 1: Create Brands
         self.stdout.write(self.style.HTTP_INFO('ШАГ 1: Создание брендов...'))
