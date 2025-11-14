@@ -1,12 +1,13 @@
 """
 Management command to load comprehensive test data for LAMIS
-Usage: python manage.py load_test_data
+Usage: python manage.py load_test_data [--flush]
 
 Loads in order:
 1. Brands (Lamis, Blesk, Caizer)
 2. Sections (6 sections with descriptions)
 3. Categories (for each section + brand)
 4. Collections (10 for Мебель для ванной)
+4.5. Types (Напольный, Подвесной и т.д. для Санфарфор)
 5. Products (25-30 with real image URLs)
 """
 
@@ -58,6 +59,10 @@ class Command(BaseCommand):
         self.stdout.write(self.style.HTTP_INFO('\nШАГ 4: Создание коллекций...'))
         collections = self.create_collections(sections, brands, categories)
 
+        # Step 4.5: Create Types
+        self.stdout.write(self.style.HTTP_INFO('\nШАГ 4.5: Создание типов...'))
+        types = self.create_types(sections, brands, categories)
+
         # Step 5: Create Products
         self.stdout.write(self.style.HTTP_INFO('\nШАГ 5: Создание товаров...'))
         products = self.create_products(sections, brands, categories, collections)
@@ -70,6 +75,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Разделов: {len(sections)}'))
         self.stdout.write(self.style.SUCCESS(f'Категорий: {len(categories)}'))
         self.stdout.write(self.style.SUCCESS(f'Коллекций: {len(collections)}'))
+        self.stdout.write(self.style.SUCCESS(f'Типов: {len(types)}'))
         self.stdout.write(self.style.SUCCESS(f'Товаров: {len(products)}'))
         self.stdout.write(self.style.SUCCESS('='*60 + '\n'))
 
@@ -255,6 +261,51 @@ class Command(BaseCommand):
                     self.stdout.write(f'  {status} {collection.name} ({brand.name} → {category.name})')
 
         return collections
+
+    def create_types(self, sections, brands, categories):
+        """Create types for Санфарфор categories (Унитазы, Раковины, Биде, Писсуары)
+
+        Типы - это способ монтажа: Напольный, Подвесной, Настенный, Встраиваемый
+        """
+        # Определяем типы для каждой категории Санфарфора
+        types_data = {
+            'Унитазы': ['Напольный', 'Подвесной', 'Приставной', 'Унитаз-компакт'],
+            'Раковины': ['Накладная', 'Встраиваемая', 'Подвесная', 'На пьедестале'],
+            'Биде': ['Напольное', 'Подвесное', 'Приставное'],
+            'Писсуары': ['Настенный', 'Напольный'],
+        }
+
+        section_sanfarfor = sections.get('Санфарфор')
+        brand_caizer = brands.get('Caizer')
+
+        types = []
+
+        if section_sanfarfor and brand_caizer:
+            for category_name, type_names in types_data.items():
+                # Найти категорию Санфарфор → Caizer → category_name
+                try:
+                    category = Category.objects.get(
+                        name=category_name,
+                        section=section_sanfarfor,
+                        brand=brand_caizer
+                    )
+
+                    for type_name in type_names:
+                        type_obj, created = Type.objects.update_or_create(
+                            name=type_name,
+                            category=category,
+                            defaults={
+                                'description': f'{type_name} {category_name.lower()}'
+                            }
+                        )
+                        types.append(type_obj)
+                        status = '✓' if created else '↻'
+                        self.stdout.write(f'  {status} {category.name} → {type_obj.name}')
+
+                except Category.DoesNotExist:
+                    self.stdout.write(self.style.WARNING(f'  ⚠ Категория "{category_name}" не найдена'))
+
+        return types
 
     def get_images_for_product(self, product_name, collection_name, brand_name):
         """Get appropriate images for a product based on name/collection/brand"""
