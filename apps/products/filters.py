@@ -96,14 +96,22 @@ class CategoryFilter(filters.FilterSet):
     FilterSet for Category model
     НОВАЯ АРХИТЕКТУРА: Category зависит от Section + Brand (оба обязательны)
     """
-    section_id = filters.NumberFilter(field_name='section__id')
-    section_slug = filters.CharFilter(field_name='section__slug')
+    section_id = filters.NumberFilter(method='filter_by_section')
+    section_slug = filters.CharFilter(method='filter_by_section_slug')
     brand_id = filters.NumberFilter(field_name='brand__id')
     brand_slug = filters.CharFilter(field_name='brand__slug')
 
     class Meta:
         model = Category
         fields = ['section_id', 'section_slug', 'brand_id', 'brand_slug']
+
+    def filter_by_section(self, queryset, name, value):
+        """Filter categories by section - returns distinct category names"""
+        return queryset.filter(section__id=value).distinct()
+
+    def filter_by_section_slug(self, queryset, name, value):
+        """Filter categories by section slug - returns distinct category names"""
+        return queryset.filter(section__slug=value).distinct()
 
 
 class CollectionFilter(filters.FilterSet):

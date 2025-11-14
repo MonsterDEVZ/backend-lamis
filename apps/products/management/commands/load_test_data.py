@@ -179,16 +179,16 @@ class Command(BaseCommand):
     def create_collections(self, sections, brands, categories):
         """Create 10 collections for 'Мебель для ванной' section"""
         collections_data = [
+            'Akcent',
+            'Omega',
+            'Sanremo',
+            'Palermo',
+            'Deluxe',
+            'Andalusia',
+            'Premium',
             'Solo',
             'Harmony',
             'Lux',
-            'Premium',
-            'Eco',
-            'Modern',
-            'Classic',
-            'Compact',
-            'Family',
-            'Exclusive',
         ]
 
         section_furniture = sections['Мебель для ванной']
@@ -229,22 +229,18 @@ class Command(BaseCommand):
             'solo': 'lamis-solo',
             'harmony': 'lamis-harmony',
             'lux': 'lamis-lux',
-            'compact': 'lamis-compact',
-            'classic': 'lamis-lamis',
-            'modern': 'lamis-lamis',
             'premium': 'caizer-premium' if brand_name == 'Caizer' else 'lamis-lux',
-            'exclusive': 'lamis-led',
-            'family': 'lamis-akcent',
-            'eco': 'lamis-compact',
+            'deluxe': 'lamis-led',
             'akcent': 'lamis-akcent',
-            'amsterdam': 'lamis-amsterdam',
-            'andalusia': 'lamis-andalusia',
-            'appalon': 'lamis-appalon',
             'omega': 'lamis-omega',
-            'palermo': 'lamis-palermo',
-            'nora': 'lamis-nora',
             'sanremo': 'lamis-sanremo',
+            'palermo': 'lamis-palermo',
+            'andalusia': 'lamis-andalusia',
+            'amsterdam': 'lamis-amsterdam',
+            'appalon': 'lamis-appalon',
+            'nora': 'lamis-nora',
             'sevilya': 'lamis-sevilya',
+            'compact': 'lamis-compact',
             'led': 'lamis-led',
             'standard': 'blesk-standard',
         }
@@ -362,13 +358,13 @@ class Command(BaseCommand):
             {'name': 'Водонагреватель накопительный 100л горизонтальный', 'section': 'Водонагреватели', 'brand': 'Blesk', 'category': 'Накопительные', 'collection': None, 'price': 18900},
 
             # Дополнительные товары
-            {'name': 'Тумба Compact 50 с раковиной венге', 'section': 'Мебель для ванной', 'brand': 'Lamis', 'category': 'Тумбы', 'collection': 'Compact', 'price': 21900},
-            {'name': 'Пенал Family высокий двухдверный', 'section': 'Мебель для ванной', 'brand': 'Lamis', 'category': 'Пеналы', 'collection': 'Family', 'price': 16700},
-            {'name': 'Зеркало Exclusive 120 с подсветкой и подогревом', 'section': 'Зеркала', 'brand': 'Lamis', 'category': 'Зеркала с подсветкой', 'collection': None, 'price': 24500},
+            {'name': 'Тумба Akcent 50 с раковиной венге', 'section': 'Мебель для ванной', 'brand': 'Lamis', 'category': 'Тумбы', 'collection': 'Akcent', 'price': 21900},
+            {'name': 'Пенал Omega высокий двухдверный', 'section': 'Мебель для ванной', 'brand': 'Lamis', 'category': 'Пеналы', 'collection': 'Omega', 'price': 16700},
+            {'name': 'Зеркало Deluxe 120 с подсветкой и подогревом', 'section': 'Зеркала', 'brand': 'Lamis', 'category': 'Зеркала с подсветкой', 'collection': None, 'price': 24500},
             {'name': 'Раковина двойная 120 см керамика', 'section': 'Санфарфор', 'brand': 'Caizer', 'category': 'Раковины', 'collection': None, 'price': 18900},
             {'name': 'Душевая кабина 120x80 с поддоном', 'section': 'Душевые кабины', 'brand': 'Caizer', 'category': 'Душевые кабины', 'collection': None, 'price': 45900},
             {'name': 'Водонагреватель проточный 5.5 кВт с душем', 'section': 'Водонагреватели', 'brand': 'Blesk', 'category': 'Проточные', 'collection': None, 'price': 7890},
-            {'name': 'Тумба Classic 70 напольная с ящиками', 'section': 'Мебель для ванной', 'brand': 'Lamis', 'category': 'Тумбы', 'collection': 'Classic', 'price': 28900},
+            {'name': 'Тумба Palermo 70 напольная с ящиками', 'section': 'Мебель для ванной', 'brand': 'Lamis', 'category': 'Тумбы', 'collection': 'Palermo', 'price': 28900},
         ]
 
         products = []

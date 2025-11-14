@@ -126,6 +126,41 @@ class CategoryViewSet(viewsets.ModelViewSet):
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
 
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to return unique categories by name when filtering by section
+        This removes duplicates when same category exists for multiple brands
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Check if filtering by section (for navigation menu)
+        section_id = request.query_params.get('section_id')
+        section_slug = request.query_params.get('section_slug')
+        brand_id = request.query_params.get('brand_id')
+        brand_slug = request.query_params.get('brand_slug')
+
+        # If filtering by section without brand - return unique category names
+        if (section_id or section_slug) and not (brand_id or brand_slug):
+            # Get unique categories by name
+            seen_names = set()
+            unique_categories = []
+            for category in queryset:
+                if category.name not in seen_names:
+                    seen_names.add(category.name)
+                    unique_categories.append(category)
+
+            serializer = self.get_serializer(unique_categories, many=True)
+            return Response(serializer.data)
+
+        # Default behavior for other cases
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get'])
     def first_brand(self, request, pk=None):
         """
@@ -180,6 +215,43 @@ class CollectionViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to return unique collections by name when filtering by section
+        This removes duplicates when same collection exists for multiple categories/brands
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Check if filtering by section only (for navigation menu)
+        section_id = request.query_params.get('section_id')
+        section_slug = request.query_params.get('section_slug')
+        brand_id = request.query_params.get('brand_id')
+        brand_slug = request.query_params.get('brand_slug')
+        category_id = request.query_params.get('category_id')
+        category_slug = request.query_params.get('category_slug')
+
+        # If filtering by section without brand/category - return unique collection names
+        if (section_id or section_slug) and not (brand_id or brand_slug or category_id or category_slug):
+            # Get unique collections by name
+            seen_names = set()
+            unique_collections = []
+            for collection in queryset:
+                if collection.name not in seen_names:
+                    seen_names.add(collection.name)
+                    unique_collections.append(collection)
+
+            serializer = self.get_serializer(unique_collections, many=True)
+            return Response(serializer.data)
+
+        # Default behavior for other cases
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def first_brand(self, request, pk=None):
