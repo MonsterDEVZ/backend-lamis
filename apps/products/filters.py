@@ -10,16 +10,12 @@ from apps.products.models import Product, Brand, Category, Collection, Type
 class ProductFilter(filters.FilterSet):
     """
     FilterSet for Product model
-    НОВАЯ АРХИТЕКТУРА: Supports filtering by section, brand, category, collection, type, and flags
+    Supports filtering by section, category, collection, type, and flags
     Supports both ID (number) and slug (string) filtering
     """
     # Support both ID and slug for section
     section_id = filters.NumberFilter(field_name='section__id')
     section_slug = filters.CharFilter(field_name='section__slug')
-
-    # Support both ID and slug for brand (НОВОЕ!)
-    brand_id = filters.NumberFilter(field_name='brand__id')
-    brand_slug = filters.CharFilter(field_name='brand__slug')
 
     # Support both ID and slug for category
     category_id = filters.CharFilter(method='filter_category')
@@ -42,7 +38,6 @@ class ProductFilter(filters.FilterSet):
         model = Product
         fields = [
             'section_id', 'section_slug',
-            'brand_id', 'brand_slug',
             'category_id', 'category_slug',
             'collection_id', 'collection_slug',
             'type_id', 'type_slug',
