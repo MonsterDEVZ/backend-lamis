@@ -150,7 +150,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
                     unique_categories.append(category)
 
             serializer = self.get_serializer(unique_categories, many=True)
-            return Response(serializer.data)
+            # Return in DRF paginated format for consistency
+            return Response({
+                'count': len(unique_categories),
+                'next': None,
+                'previous': None,
+                'results': serializer.data
+            })
 
         # Default behavior for other cases
         page = self.paginate_queryset(queryset)
@@ -159,7 +165,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response({
+            'count': len(queryset),
+            'next': None,
+            'previous': None,
+            'results': serializer.data
+        })
 
     @action(detail=True, methods=['get'])
     def first_brand(self, request, pk=None):
@@ -242,7 +253,13 @@ class CollectionViewSet(viewsets.ModelViewSet):
                     unique_collections.append(collection)
 
             serializer = self.get_serializer(unique_collections, many=True)
-            return Response(serializer.data)
+            # Return in DRF paginated format for consistency
+            return Response({
+                'count': len(unique_collections),
+                'next': None,
+                'previous': None,
+                'results': serializer.data
+            })
 
         # Default behavior for other cases
         page = self.paginate_queryset(queryset)
@@ -251,7 +268,12 @@ class CollectionViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response({
+            'count': len(queryset),
+            'next': None,
+            'previous': None,
+            'results': serializer.data
+        })
 
     @action(detail=True, methods=['get'])
     def first_brand(self, request, pk=None):
