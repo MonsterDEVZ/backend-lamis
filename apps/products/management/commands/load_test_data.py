@@ -147,32 +147,51 @@ class Command(BaseCommand):
         return sections
 
     def create_categories(self, sections, brands):
-        """Create categories for each section + brand combination"""
+        """Create categories for each section + brand combination
+
+        ВАЖНО: Категории создаются ТОЛЬКО для тех брендов, у которых будут товары!
+        Это предотвращает ситуацию где категория существует но без товаров.
+        """
+        # Определяем какие категории создавать для каждого section+brand
         categories_data = {
-            'Мебель для ванной': ['Мебель', 'Тумбы', 'Пеналы', 'Шкафы'],
-            'Санфарфор': ['Раковины', 'Унитазы', 'Биде', 'Писсуары'],
-            'Смесители': ['Смесители для раковины', 'Смесители для ванны', 'Смесители для душа', 'Смесители для кухни'],
-            'Душевые кабины': ['Душевые кабины', 'Душевые уголки', 'Душевые двери', 'Поддоны'],
-            'Водонагреватели': ['Накопительные', 'Проточные', 'Бойлеры', 'Косвенного нагрева'],
-            'Зеркала': ['Зеркала с подсветкой', 'Зеркала без подсветки', 'Зеркальные шкафы', 'Зеркала с полкой'],
+            # Мебель для ванной - ВСЕ бренды (у всех будут товары)
+            ('Мебель для ванной', 'Lamis'): ['Мебель', 'Тумбы', 'Пеналы', 'Шкафы'],
+            ('Мебель для ванной', 'Caizer'): ['Мебель', 'Тумбы', 'Пеналы', 'Шкафы'],
+            ('Мебель для ванной', 'Blesk'): ['Мебель', 'Тумбы', 'Пеналы', 'Шкафы'],
+
+            # Санфарфор - ТОЛЬКО Caizer (у него будут товары)
+            ('Санфарфор', 'Caizer'): ['Раковины', 'Унитазы', 'Биде', 'Писсуары'],
+
+            # Смесители - ТОЛЬКО Lamis (у него будут товары)
+            ('Смесители', 'Lamis'): ['Смесители для раковины', 'Смесители для ванны', 'Смесители для душа', 'Смесители для кухни'],
+
+            # Душевые кабины - ТОЛЬКО Caizer (у него будут товары)
+            ('Душевые кабины', 'Caizer'): ['Душевые кабины', 'Душевые уголки', 'Душевые двери', 'Поддоны'],
+
+            # Водонагреватели - ТОЛЬКО Blesk (у него будут товары)
+            ('Водонагреватели', 'Blesk'): ['Накопительные', 'Проточные', 'Бойлеры', 'Косвенного нагрева'],
+
+            # Зеркала - ТОЛЬКО Lamis (у него будут товары)
+            ('Зеркала', 'Lamis'): ['Зеркала с подсветкой', 'Зеркала без подсветки', 'Зеркальные шкафы', 'Зеркала с полкой'],
         }
 
         categories = []
-        for section_name, category_names in categories_data.items():
+        for (section_name, brand_name), category_names in categories_data.items():
             section = sections[section_name]
-            for brand_name, brand in brands.items():
-                for category_name in category_names:
-                    category, created = Category.objects.update_or_create(
-                        name=category_name,
-                        section=section,
-                        brand=brand,
-                        defaults={
-                            'description': f'{category_name} от производителя {brand_name}'
-                        }
-                    )
-                    categories.append(category)
-                    status = '✓' if created else '↻'
-                    self.stdout.write(f'  {status} {section.name} → {brand.name} → {category.name}')
+            brand = brands[brand_name]
+
+            for category_name in category_names:
+                category, created = Category.objects.update_or_create(
+                    name=category_name,
+                    section=section,
+                    brand=brand,
+                    defaults={
+                        'description': f'{category_name} от производителя {brand_name}'
+                    }
+                )
+                categories.append(category)
+                status = '✓' if created else '↻'
+                self.stdout.write(f'  {status} {section.name} → {brand.name} → {category.name}')
 
         return categories
 
