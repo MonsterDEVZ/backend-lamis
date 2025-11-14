@@ -218,22 +218,114 @@ class Command(BaseCommand):
 
         return collections
 
-    def create_products(self, sections, brands, categories, collections):
-        """Create 25-30 products with real image URLs"""
+    def get_images_for_product(self, product_name, collection_name, brand_name):
+        """Get appropriate images for a product based on name/collection/brand"""
 
-        # Image URLs from iddis.ru
-        image_urls = [
-            'https://static.iddis.ru/upload/iblock/ac9/xh4fobwj0hrzejp8q0gw2q77i5b8fojx.jpg',
-            'https://static.iddis.ru/upload/iblock/2fc/7m4h8kd19uksgxbsmgbsezzmm1qxkl7c.jpg',
-            'https://static.iddis.ru/upload/iblock/9c2/ov4qzhcj24gj0vfj12xp5vrnz0cqe37y.jpg',
-            'https://static.iddis.ru/upload/iblock/da0/64uvb2ijvdw04gszgwftphzawrrnldz0.jpg',
-            'https://static.iddis.ru/upload/iblock/ba4/64mzzwf7hk0l9k3p0slz3y7ckkf8rp7q.jpg',
-            'https://static.iddis.ru/upload/iblock/f10/s99u4wvvlf5c3fzc4k5r0gd9vfdjw5pu.jpg',
-            'https://static.iddis.ru/upload/iblock/08f/4o0hfp9k8yabczfdq95qskm6b3pnuq67.jpg',
-            'https://static.iddis.ru/upload/iblock/6a2/lz9c89h87s19zj72ub1d3fpjvbrvd3e9.jpg',
-            'https://static.iddis.ru/upload/iblock/60d/mtkr5h50rnf25u0zqg8dpj83nz6zj0sc.jpg',
-            'https://static.iddis.ru/upload/iblock/5a7/wnurkucdx5wd0sxlzx9aqokohxqwbmps.jpg',
+        # Base URL for all images
+        base_url = 'https://pub-abbe62b0e52d438ea38505b6a2c733d7.r2.dev/images/catalog/'
+
+        # Mapping collections/names to image prefixes
+        image_mapping = {
+            'solo': 'lamis-solo',
+            'harmony': 'lamis-harmony',
+            'lux': 'lamis-lux',
+            'compact': 'lamis-compact',
+            'classic': 'lamis-lamis',
+            'modern': 'lamis-lamis',
+            'premium': 'caizer-premium' if brand_name == 'Caizer' else 'lamis-lux',
+            'exclusive': 'lamis-led',
+            'family': 'lamis-akcent',
+            'eco': 'lamis-compact',
+            'akcent': 'lamis-akcent',
+            'amsterdam': 'lamis-amsterdam',
+            'andalusia': 'lamis-andalusia',
+            'appalon': 'lamis-appalon',
+            'omega': 'lamis-omega',
+            'palermo': 'lamis-palermo',
+            'nora': 'lamis-nora',
+            'sanremo': 'lamis-sanremo',
+            'sevilya': 'lamis-sevilya',
+            'led': 'lamis-led',
+            'standard': 'blesk-standard',
+        }
+
+        # All available images
+        all_images = [
+            ('blesk-standard', 1, True),
+            ('caizer-premium', 1, True),
+            ('caizer-premium', 2, True),
+            ('lamis-akcent', 1, True),
+            ('lamis-akcent', 2, True),
+            ('lamis-akcent', 3, True),
+            ('lamis-amsterdam', 1, True),
+            ('lamis-andalusia', 1, True),
+            ('lamis-appalon', 1, True),
+            ('lamis-compact', 1, True),
+            ('lamis-compact', 2, True),
+            ('lamis-harmony', 1, True),
+            ('lamis-lamis', 1, True),
+            ('lamis-lamis', 2, True),
+            ('lamis-led', 1, True),
+            ('lamis-led', 2, True),
+            ('lamis-lux', 1, True),
+            ('lamis-lux', 2, True),
+            ('lamis-nora', 1, False),
+            ('lamis-omega', 1, False),
+            ('lamis-palermo', 1, False),
+            ('lamis-sanremo', 1, False),
+            ('lamis-sevilya', 1, False),
+            ('lamis-solo', 1, True),
+            ('lamis-solo', 2, True),
         ]
+
+        # Try to find matching image by collection or product name
+        search_term = None
+        if collection_name:
+            search_term = collection_name.lower()
+        else:
+            # Try to find keyword in product name
+            product_lower = product_name.lower()
+            for keyword in image_mapping.keys():
+                if keyword in product_lower:
+                    search_term = keyword
+                    break
+
+        # Get image prefix
+        if search_term and search_term in image_mapping:
+            image_prefix = image_mapping[search_term]
+        else:
+            # Random fallback
+            image_prefix = random.choice([img[0] for img in all_images])
+
+        # Find images with this prefix
+        matching_images = [img for img in all_images if img[0] == image_prefix]
+
+        if not matching_images:
+            # Fallback to first available
+            matching_images = all_images[:1]
+
+        # Pick a random variant (1 or 2) if multiple exist
+        selected = random.choice(matching_images)
+        prefix, number, has_render = selected
+
+        main_image = f'{base_url}{prefix}-{number}-main.webp'
+        hover_image = f'{base_url}{prefix}-{number}-render.webp' if has_render else main_image
+
+        # Additional images - try to get other variants
+        additional = []
+        for img in all_images:
+            if img[0] == prefix and img[1] != number:
+                additional.append(f'{base_url}{img[0]}-{img[1]}-main.webp')
+                if img[2]:  # has render
+                    additional.append(f'{base_url}{img[0]}-{img[1]}-render.webp')
+
+        # Limit to 2 additional images
+        additional = additional[:2]
+
+        return main_image, hover_image, additional
+
+    def create_products(self, sections, brands, categories, collections):
+        """Create 25-30 products with real image URLs from Cloudflare R2"""
 
         products_data = [
             # Мебель для ванной - Lamis
@@ -304,20 +396,21 @@ class Command(BaseCommand):
 
             # Find collection if specified
             collection = None
+            collection_name = None
             if product_data.get('collection'):
                 collection = Collection.objects.filter(
                     name=product_data['collection'],
                     brand=brand,
                     category__section=section
                 ).first()
+                collection_name = product_data['collection'] if collection else None
 
-            # Use image URLs cyclically
-            main_image = image_urls[idx % len(image_urls)]
-            hover_image = image_urls[(idx + 1) % len(image_urls)]
-            additional_images = [
-                image_urls[(idx + 2) % len(image_urls)],
-                image_urls[(idx + 3) % len(image_urls)],
-            ]
+            # Get appropriate images based on product name/collection
+            main_image, hover_image, additional_images = self.get_images_for_product(
+                product_data['name'],
+                collection_name,
+                brand.name
+            )
 
             # Random colors
             colors = random.choice(colors_options)
