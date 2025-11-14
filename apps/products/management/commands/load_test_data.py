@@ -307,6 +307,61 @@ class Command(BaseCommand):
 
         return types
 
+    def get_type_id_for_product(self, product_name, category_name):
+        """
+        Определить type_id по названию товара и категории
+        Smart mapping: анализирует название товара для определения типа
+        """
+        name_lower = product_name.lower()
+
+        # РАКОВИНЫ
+        if category_name == 'Раковины':
+            if 'встроен' in name_lower or 'встраива' in name_lower:
+                return 6  # Встраиваемая
+            elif 'накладн' in name_lower:
+                return 5  # Накладная
+            elif 'подвес' in name_lower:
+                return 7  # Подвесная
+            elif 'пьедестал' in name_lower:
+                return 8  # На пьедестале
+            else:
+                return 7  # Подвесная (по умолчанию)
+
+        # УНИТАЗЫ
+        elif category_name == 'Унитазы':
+            if 'подвес' in name_lower:
+                return 2  # Подвесной
+            elif 'компакт' in name_lower:
+                return 4  # Унитаз-компакт
+            elif 'приставн' in name_lower:
+                return 3  # Приставной
+            elif 'напольн' in name_lower:
+                return 1  # Напольный
+            else:
+                return 1  # Напольный (по умолчанию)
+
+        # БИДЕ
+        elif category_name == 'Биде':
+            if 'подвес' in name_lower:
+                return 10  # Подвесное
+            elif 'приставн' in name_lower:
+                return 11  # Приставное
+            elif 'напольн' in name_lower:
+                return 9  # Напольное
+            else:
+                return 9  # Напольное (по умолчанию)
+
+        # ПИССУАРЫ
+        elif category_name == 'Писсуары':
+            if 'настенн' in name_lower or 'настен' in name_lower:
+                return 12  # Настенный
+            elif 'напольн' in name_lower:
+                return 13  # Напольный
+            else:
+                return 12  # Настенный (по умолчанию)
+
+        return None
+
     def get_images_for_product(self, product_name, collection_name, brand_name):
         """Get appropriate images for a product based on name/collection/brand"""
 
@@ -504,6 +559,9 @@ class Command(BaseCommand):
             is_new = random.random() < 0.3  # 30% chance
             is_on_sale = random.random() < 0.2  # 20% chance
 
+            # Get type_id using smart mapping (only for Санфарфор categories)
+            type_id = self.get_type_id_for_product(product_data['name'], category.name)
+
             product, created = Product.objects.update_or_create(
                 name=product_data['name'],
                 section=section,
@@ -511,6 +569,7 @@ class Command(BaseCommand):
                 defaults={
                     'category': category,
                     'collection': collection,
+                    'type_id': type_id,  # Add type_id here!
                     'price': Decimal(str(product_data['price'])),
                     'main_image_url': main_image,
                     'hover_image_url': hover_image,
@@ -529,6 +588,12 @@ class Command(BaseCommand):
             if is_on_sale:
                 flags.append('🔥')
             flags_str = ' '.join(flags) if flags else ''
-            self.stdout.write(f'  {status}: {product.name} {flags_str}')
+
+            # Add type info if assigned
+            type_info = ''
+            if type_id and product.type:
+                type_info = f' [Тип: {product.type.name}]'
+
+            self.stdout.write(f'  {status}: {product.name} {flags_str}{type_info}')
 
         return products
