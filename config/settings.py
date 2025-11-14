@@ -5,6 +5,7 @@ Django settings for LAMIS E-commerce Backend
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Serve static files
     "corsheaders.middleware.CorsMiddleware",  # CORS должен быть первым после Security
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -72,25 +74,36 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Database - SQLite (temporary for development)
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+# Database Configuration
+# Railway provides DATABASE_URL automatically
+DATABASE_URL = config('DATABASE_URL', default=None)
 
-# Database - PostgreSQL (uncomment for production)
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": config('DB_NAME', default='lamis_db'),
-#         "USER": config('DB_USER', default='lamis_user'),
-#         "PASSWORD": config('DB_PASSWORD', default='lamis_password'),
-#         "HOST": config('DB_HOST', default='localhost'),
-#         "PORT": config('DB_PORT', default='5432'),
-#     }
-# }
+if DATABASE_URL:
+    # Use Railway's DATABASE_URL (PostgreSQL)
+    DATABASES = {
+        "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    }
+else:
+    # Fallback to PostgreSQL with individual env vars or SQLite for local dev
+    if config('DB_HOST', default=None):
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": config('DB_NAME', default='lamis_db'),
+                "USER": config('DB_USER', default='lamis_user'),
+                "PASSWORD": config('DB_PASSWORD', default='lamis_password'),
+                "HOST": config('DB_HOST', default='localhost'),
+                "PORT": config('DB_PORT', default='5432'),
+            }
+        }
+    else:
+        # SQLite for local development
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -120,7 +133,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Only add STATICFILES_DIRS if the 'static' directory exists
+import os
+if os.path.exists(BASE_DIR / "static"):
+    STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# WhiteNoise configuration
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Media files (Uploaded images, etc.)
 MEDIA_URL = "/media/"
