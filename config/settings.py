@@ -243,6 +243,30 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# CSRF Settings
+# Django 4.x requires explicit CSRF_TRUSTED_ORIGINS for https origins
+CSRF_TRUSTED_ORIGINS = []
+
+# Add HTTPS origins from ALLOWED_HOSTS
+for host in ALLOWED_HOSTS:
+    if host and host != '*':
+        # Add both http and https versions
+        if not host.startswith('http'):
+            CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
+            # Also support http for local development
+            if 'localhost' in host or '127.0.0.1' in host:
+                CSRF_TRUSTED_ORIGINS.append(f'http://{host}')
+
+# Add Railway domain explicitly
+if 'backend-lamis-production.up.railway.app' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('https://backend-lamis-production.up.railway.app')
+
+# Allow configuration via environment variable
+csrf_origins_env = config('CSRF_TRUSTED_ORIGINS', default=None)
+if csrf_origins_env:
+    additional_origins = [s.strip() for s in csrf_origins_env.split(',')]
+    CSRF_TRUSTED_ORIGINS.extend(additional_origins)
+
 # DRF Spectacular Settings (Swagger/OpenAPI)
 SPECTACULAR_SETTINGS = {
     'TITLE': 'LAMIS E-commerce API',
