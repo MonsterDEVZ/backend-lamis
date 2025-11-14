@@ -176,6 +176,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     def first_brand(self, request, pk=None):
         """
         GET /api/v1/categories/{id}/first-brand/
+        DEPRECATED: Use first_brand_with_products instead
 
         Возвращает бренд для этой категории (для автоматического выбора фильтров)
         """
@@ -190,6 +191,50 @@ class CategoryViewSet(viewsets.ModelViewSet):
             'name': brand.name,
             'slug': brand.slug
         })
+
+    @action(detail=True, methods=['get'], url_path='first-brand-with-products')
+    def first_brand_with_products(self, request, pk=None):
+        """
+        GET /api/v1/categories/{id}/first-brand-with-products/?section_id=1
+
+        Возвращает ПЕРВЫЙ бренд который ИМЕЕТ товары в этой категории
+        Проверяет все бренды по порядку и возвращает первый с count > 0
+        """
+        category = self.get_object()
+        section_id = request.query_params.get('section_id')
+
+        # Получить все бренды для этой категории
+        brands = Brand.objects.filter(
+            categories__id=category.id
+        ).distinct().order_by('id')
+
+        # Если указан section_id - дополнительная фильтрация
+        if section_id:
+            brands = brands.filter(categories__section_id=section_id)
+
+        # Найти ПЕРВЫЙ бренд с товарами
+        for brand in brands:
+            filters = {
+                'brand': brand,
+                'category': category,
+            }
+            if section_id:
+                filters['section_id'] = section_id
+
+            count = Product.objects.filter(**filters).count()
+
+            if count > 0:
+                return Response({
+                    'id': brand.id,
+                    'name': brand.name,
+                    'slug': brand.slug,
+                    'product_count': count
+                })
+
+        # Если нет товаров ни у одного бренда
+        return Response({
+            'error': 'No brand with products found for this category'
+        }, status=404)
 
 
 class CollectionViewSet(viewsets.ModelViewSet):
@@ -312,6 +357,56 @@ class CollectionViewSet(viewsets.ModelViewSet):
             'name': category.name,
             'slug': category.slug
         })
+
+    @action(detail=True, methods=['get'], url_path='first-brand-category-with-products')
+    def first_brand_category_with_products(self, request, pk=None):
+        """
+        GET /api/v1/collections/{id}/first-brand-category-with-products/?section_id=1
+
+        Возвращает ПЕРВЫЕ brand + category которые ИМЕЮТ товары в этой коллекции
+        Проверяет все комбинации brand+category и возвращает первую с count > 0
+        """
+        collection = self.get_object()
+        section_id = request.query_params.get('section_id')
+
+        # Получить все категории для этой коллекции (по имени)
+        categories = Category.objects.filter(
+            collection__name=collection.name
+        ).select_related('brand').distinct()
+
+        # Если указан section_id - дополнительная фильтрация
+        if section_id:
+            categories = categories.filter(section_id=section_id)
+
+        # Найти ПЕРВУЮ комбинацию brand+category с товарами
+        for category in categories.order_by('id'):
+            brand = category.brand
+
+            filters = {
+                'brand': brand,
+                'category': category,
+                'collection': collection,
+            }
+            if section_id:
+                filters['section_id'] = section_id
+
+            count = Product.objects.filter(**filters).count()
+
+            if count > 0:
+                return Response({
+                    'brand_id': brand.id,
+                    'brand_name': brand.name,
+                    'brand_slug': brand.slug,
+                    'category_id': category.id,
+                    'category_name': category.name,
+                    'category_slug': category.slug,
+                    'product_count': count
+                })
+
+        # Если нет товаров ни у одной комбинации
+        return Response({
+            'error': 'No brand+category with products found for this collection'
+        }, status=404)
 
 
 class TypeViewSet(viewsets.ModelViewSet):
