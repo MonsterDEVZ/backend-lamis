@@ -30,11 +30,13 @@ class SearchViewSet(viewsets.ViewSet):
 
     def list(self, request):
         """
-        GET /api/v1/search/?q=query
+        GET /api/v1/search/?q=query&limit=5
 
         Search across all models and return unified results
+        Optional limit parameter to restrict number of results
         """
         query = request.query_params.get('q', '').strip()
+        limit = request.query_params.get('limit', None)
 
         if not query:
             return Response({
@@ -49,6 +51,12 @@ class SearchViewSet(viewsets.ViewSet):
                 'total': 0,
                 'message': 'Search query must be at least 2 characters'
             })
+
+        # Parse limit parameter
+        try:
+            limit = int(limit) if limit else None
+        except ValueError:
+            limit = None
 
         # Collect all results
         results = []
@@ -68,6 +76,10 @@ class SearchViewSet(viewsets.ViewSet):
         # 4. Search Brands
         brands = self._search_brands(query)
         results.extend(brands)
+
+        # Apply limit if specified
+        if limit and limit > 0:
+            results = results[:limit]
 
         # Serialize results
         serializer = SearchResultSerializer(results, many=True)
