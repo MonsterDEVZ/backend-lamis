@@ -488,30 +488,50 @@ class PlumbingSectionViewSet(viewsets.ViewSet):
         """
         GET /api/v1/plumbing-section/
         Returns CAIZER products grouped by categories
-        """
-        # CAIZER brand ID
-        CAIZER_BRAND_ID = 3
 
-        # Category mapping
-        CATEGORY_MAPPING = {
-            'rakoviny': [5],  # Раковины
-            'unitazy': [4],  # Унитазы
-            'bidet': [6],  # Биде
-            'pissuari': [25],  # Писсуары
-            'smesiteli': [26, 27, 28, 29],  # Смесители (для раковины, ванны, душа, кухни)
-            'dushevye': [30, 31, 32, 33],  # Душевые (кабины, уголки, двери, поддоны)
-            'vanny': [1],  # Ванны
+        Uses category names instead of IDs to work across different databases
+        """
+        from django.db.models import Q
+
+        # Find CAIZER brand dynamically
+        try:
+            caizer_brand = Brand.objects.get(name__iexact='Caizer')
+        except Brand.DoesNotExist:
+            return Response({
+                'rakoviny': [],
+                'unitazy': [],
+                'bidet': [],
+                'pissuari': [],
+                'smesiteli': [],
+                'dushevye': [],
+                'vanny': [],
+            })
+
+        # Category name mapping (works across different databases)
+        CATEGORY_NAME_MAPPING = {
+            'rakoviny': ['Раковины'],
+            'unitazy': ['Унитазы'],
+            'bidet': ['Биде'],
+            'pissuari': ['Писсуары'],
+            'smesiteli': ['Смесители для раковины', 'Смесители для ванны', 'Смесители для душа', 'Смесители для кухни'],
+            'dushevye': ['Душевые кабины', 'Душевые уголки', 'Душевые двери', 'Поддоны'],
+            'vanny': ['Ванны'],
         }
 
         # Fetch all CAIZER products
         caizer_products = Product.objects.filter(
-            brand_id=CAIZER_BRAND_ID
+            brand=caizer_brand
         ).select_related('section', 'brand', 'category')
 
         # Group products by category
         result = {}
-        for key, category_ids in CATEGORY_MAPPING.items():
-            products = caizer_products.filter(category_id__in=category_ids)
+        for key, category_names in CATEGORY_NAME_MAPPING.items():
+            # Build Q filter for category names
+            category_filter = Q()
+            for cat_name in category_names:
+                category_filter |= Q(category__name__iexact=cat_name)
+
+            products = caizer_products.filter(category_filter)
             serializer = PlumbingProductSerializer(products, many=True)
             result[key] = serializer.data
 
