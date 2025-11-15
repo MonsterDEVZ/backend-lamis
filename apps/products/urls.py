@@ -12,7 +12,8 @@ from apps.products.views import (
     CollectionViewSet,
     TypeViewSet,
     ProductViewSet,
-    TutorialCategoryViewSet
+    TutorialCategoryViewSet,
+    PlumbingSectionViewSet
 )
 from apps.products.search_views import SearchViewSet
 from apps.products.catalog_views import (
@@ -31,6 +32,7 @@ router.register(r'types', TypeViewSet, basename='type')
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'search', SearchViewSet, basename='search')
 router.register(r'tutorials', TutorialCategoryViewSet, basename='tutorial')
+router.register(r'plumbing-section', PlumbingSectionViewSet, basename='plumbing-section')
 
 urlpatterns = [
     # SEO-Friendly Catalog Navigation

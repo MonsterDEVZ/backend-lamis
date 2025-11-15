@@ -21,6 +21,7 @@ from apps.products.serializers import (
     ProductDetailSerializer,
     ProductCreateUpdateSerializer,
     TutorialCategorySerializer,
+    PlumbingProductSerializer,
 )
 from apps.products.filters import ProductFilter, BrandFilter, CategoryFilter, CollectionFilter, TypeFilter
 from apps.products.permissions import IsAdminOrReadOnly, IsAdmin
@@ -438,3 +439,80 @@ class TutorialCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TutorialCategorySerializer
     permission_classes = [AllowAny]  # Public access
     lookup_field = 'slug'  # Use slug instead of id for URLs
+
+
+class PlumbingSectionViewSet(viewsets.ViewSet):
+    """
+    ViewSet for PlumbingSection (CAIZER brand products)
+
+    Public endpoint (GET):
+    - GET /api/v1/plumbing-section/
+      Returns all CAIZER products grouped by categories
+
+    Example response:
+    {
+        "rakoviny": [
+            {
+                "id": 1,
+                "name": "Раковина встраиваемая белая",
+                "brand": "Caizer",
+                "brand_id": 3,
+                "category": "Раковины",
+                "category_id": 5,
+                "section": "Санфарфор",
+                "section_id": 2,
+                "image_url": "https://..."
+            },
+            ...
+        ],
+        "unitazy": [...],
+        "bidet": [...],
+        "pissuari": [...],
+        "smesiteli": [...],
+        "dushevye": [...],
+        "vanny": [...]
+    }
+
+    Categories:
+    - rakoviny: Раковины (ID=5)
+    - unitazy: Унитазы (ID=4)
+    - bidet: Биде (ID=6)
+    - pissuari: Писсуары (ID=25)
+    - smesiteli: Смесители (IDs=26,27,28,29)
+    - dushevye: Душевые (IDs=30,31,32,33)
+    - vanny: Ванны (ID=1)
+    """
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+        """
+        GET /api/v1/plumbing-section/
+        Returns CAIZER products grouped by categories
+        """
+        # CAIZER brand ID
+        CAIZER_BRAND_ID = 3
+
+        # Category mapping
+        CATEGORY_MAPPING = {
+            'rakoviny': [5],  # Раковины
+            'unitazy': [4],  # Унитазы
+            'bidet': [6],  # Биде
+            'pissuari': [25],  # Писсуары
+            'smesiteli': [26, 27, 28, 29],  # Смесители (для раковины, ванны, душа, кухни)
+            'dushevye': [30, 31, 32, 33],  # Душевые (кабины, уголки, двери, поддоны)
+            'vanny': [1],  # Ванны
+        }
+
+        # Fetch all CAIZER products
+        caizer_products = Product.objects.filter(
+            brand_id=CAIZER_BRAND_ID
+        ).select_related('section', 'brand', 'category')
+
+        # Group products by category
+        result = {}
+        for key, category_ids in CATEGORY_MAPPING.items():
+            products = caizer_products.filter(category_id__in=category_ids)
+            serializer = PlumbingProductSerializer(products, many=True)
+            result[key] = serializer.data
+
+        return Response(result)

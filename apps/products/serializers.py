@@ -269,3 +269,44 @@ class TutorialCategorySerializer(serializers.ModelSerializer):
             'pageTitle',
             'pageBannerUrl',
         ]
+
+
+class PlumbingProductSerializer(serializers.ModelSerializer):
+    """
+    Serializer for PlumbingSection products (CAIZER brand)
+
+    Returns product data in format:
+    {
+        "id": 1,
+        "name": "Раковина встраиваемая белая",
+        "brand": "Caizer",
+        "brand_id": 3,
+        "category": "Раковины",
+        "category_id": 5,
+        "section": "Санфарфор",
+        "section_id": 2,
+        "image_url": "https://..."
+    }
+    """
+    brand = serializers.CharField(source='brand.name', read_only=True)
+    category = serializers.CharField(source='category.name', read_only=True)
+    section = serializers.CharField(source='section.name', read_only=True)
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            'id',
+            'name',
+            'brand',
+            'brand_id',
+            'category',
+            'category_id',
+            'section',
+            'section_id',
+            'image_url'
+        ]
+
+    def get_image_url(self, obj):
+        """Return main image URL or None"""
+        return obj.main_image_url if obj.main_image_url else None
