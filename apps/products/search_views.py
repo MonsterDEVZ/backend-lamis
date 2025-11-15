@@ -91,18 +91,17 @@ class SearchViewSet(viewsets.ViewSet):
 
     def _search_collections(self, query):
         """Search in Collections with priority ordering"""
-        query_lower = query.lower()
-
+        # Use iregex for case-insensitive search with Cyrillic support
         collections = Collection.objects.select_related('brand', 'category', 'category__section').annotate(
             priority=Case(
                 When(name__iexact=query, then=1),  # Exact match
                 When(name__istartswith=query, then=2),  # Starts with
-                When(name__icontains=query, then=3),  # Contains
+                When(name__iregex=r'.*' + query + r'.*', then=3),  # Contains (regex)
                 default=4,
                 output_field=IntegerField()
             )
         ).filter(
-            Q(name__icontains=query) | Q(description__icontains=query)
+            Q(name__iregex=r'.*' + query + r'.*') | Q(description__iregex=r'.*' + query + r'.*')
         ).order_by('priority', 'name')[:10]
 
         results = []
@@ -128,20 +127,19 @@ class SearchViewSet(viewsets.ViewSet):
 
     def _search_products(self, query):
         """Search in Products with priority ordering"""
-        query_lower = query.lower()
-
+        # Use iregex for case-insensitive search with Cyrillic support
         products = Product.objects.select_related(
             'section', 'brand', 'category', 'collection', 'type'
         ).annotate(
             priority=Case(
                 When(name__iexact=query, then=1),  # Exact match
                 When(name__istartswith=query, then=2),  # Starts with
-                When(name__icontains=query, then=3),  # Contains
+                When(name__iregex=r'.*' + query + r'.*', then=3),  # Contains (regex)
                 default=4,
                 output_field=IntegerField()
             )
         ).filter(
-            Q(name__icontains=query) | Q(description__icontains=query)
+            Q(name__iregex=r'.*' + query + r'.*') | Q(description__iregex=r'.*' + query + r'.*')
         ).order_by('priority', 'name')[:10]
 
         results = []
@@ -171,18 +169,17 @@ class SearchViewSet(viewsets.ViewSet):
 
     def _search_categories(self, query):
         """Search in Categories with priority ordering"""
-        query_lower = query.lower()
-
+        # Use iregex for case-insensitive search with Cyrillic support
         categories = Category.objects.select_related('section', 'brand').annotate(
             priority=Case(
                 When(name__iexact=query, then=1),  # Exact match
                 When(name__istartswith=query, then=2),  # Starts with
-                When(name__icontains=query, then=3),  # Contains
+                When(name__iregex=r'.*' + query + r'.*', then=3),  # Contains (regex)
                 default=4,
                 output_field=IntegerField()
             )
         ).filter(
-            Q(name__icontains=query) | Q(description__icontains=query)
+            Q(name__iregex=r'.*' + query + r'.*') | Q(description__iregex=r'.*' + query + r'.*')
         ).order_by('priority', 'name')[:10]
 
         results = []
@@ -208,18 +205,17 @@ class SearchViewSet(viewsets.ViewSet):
 
     def _search_brands(self, query):
         """Search in Brands with priority ordering"""
-        query_lower = query.lower()
-
+        # Use iregex for case-insensitive search with Cyrillic support
         brands = Brand.objects.annotate(
             priority=Case(
                 When(name__iexact=query, then=1),  # Exact match
                 When(name__istartswith=query, then=2),  # Starts with
-                When(name__icontains=query, then=3),  # Contains
+                When(name__iregex=r'.*' + query + r'.*', then=3),  # Contains (regex)
                 default=4,
                 output_field=IntegerField()
             )
         ).filter(
-            Q(name__icontains=query) | Q(description__icontains=query)
+            Q(name__iregex=r'.*' + query + r'.*') | Q(description__iregex=r'.*' + query + r'.*')
         ).order_by('priority', 'name')[:10]
 
         results = []
