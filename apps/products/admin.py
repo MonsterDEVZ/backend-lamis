@@ -396,12 +396,8 @@ class MaterialAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('title', 'description', 'category', 'file_url'),
+            'fields': ('title', 'description', 'file_url'),
             'description': 'Основные данные материала'
-        }),
-        ('Настройки отображения', {
-            'fields': ('order', 'is_active'),
-            'description': 'Порядок сортировки и видимость на сайте'
         }),
         ('Даты', {
             'fields': ('created_at', 'updated_at'),
