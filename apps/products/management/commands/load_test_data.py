@@ -12,7 +12,7 @@ Loads in order:
 """
 
 from django.core.management.base import BaseCommand
-from apps.products.models import Brand, Section, Category, Collection, Type, Product
+from apps.products.models import Brand, Section, Category, Collection, Type, Product, TutorialCategory, TutorialVideo
 from decimal import Decimal
 import random
 
@@ -41,6 +41,8 @@ class Command(BaseCommand):
             Category.objects.all().delete()
             Section.objects.all().delete()
             Brand.objects.all().delete()
+            TutorialVideo.objects.all().delete()
+            TutorialCategory.objects.all().delete()
             self.stdout.write(self.style.SUCCESS('✓ Все данные удалены\n'))
 
         # Step 1: Create Brands
@@ -67,6 +69,10 @@ class Command(BaseCommand):
         self.stdout.write(self.style.HTTP_INFO('\nШАГ 5: Создание товаров...'))
         products = self.create_products(sections, brands, categories, collections)
 
+        # Step 6: Create Tutorials
+        self.stdout.write(self.style.HTTP_INFO('\nШАГ 6: Создание видео туториалов...'))
+        tutorial_categories, tutorial_videos = self.create_tutorials()
+
         # Summary
         self.stdout.write(self.style.SUCCESS('\n' + '='*60))
         self.stdout.write(self.style.SUCCESS('  ✅ ЗАГРУЗКА ЗАВЕРШЕНА!'))
@@ -77,6 +83,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Коллекций: {len(collections)}'))
         self.stdout.write(self.style.SUCCESS(f'Типов: {len(types)}'))
         self.stdout.write(self.style.SUCCESS(f'Товаров: {len(products)}'))
+        self.stdout.write(self.style.SUCCESS(f'Категорий видео: {len(tutorial_categories)}'))
+        self.stdout.write(self.style.SUCCESS(f'Видео: {len(tutorial_videos)}'))
         self.stdout.write(self.style.SUCCESS('='*60 + '\n'))
 
     def create_brands(self):
@@ -696,3 +704,136 @@ class Command(BaseCommand):
             self.stdout.write(f'  {status}: {product.name} {flags_str}{type_info}')
 
         return products
+
+    def create_tutorials(self):
+        """
+        Create Tutorial Categories and Videos
+        Based on MOCK_TUTORIALS_DATA from frontend
+        5 categories, 50 videos total
+        """
+        tutorial_categories = []
+        tutorial_videos = []
+
+        # Tutorial categories data (from MOCK_TUTORIALS_DATA)
+        categories_data = [
+            {
+                'title': 'Установка мебели',
+                'slug': 'furniture-installation',
+                'banner_image_url': 'https://pub-c89ea2f5dd1f4b3cbd80c0e00eefedc4.r2.dev/tutorials/furniture-installation.jpg',
+                'order': 1,
+                'videos': [
+                    {'title': 'Сборка тумбы LAMIS Solo', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 1},
+                    {'title': 'Установка пенала Omega', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 2},
+                    {'title': 'Монтаж шкафа Harmony', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 3},
+                    {'title': 'Установка тумбы Akcent 80', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 4},
+                    {'title': 'Сборка двойной тумбы Premium', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 5},
+                    {'title': 'Монтаж навесного шкафа Lux', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 6},
+                    {'title': 'Установка тумбы с выдвижными ящиками', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 7},
+                    {'title': 'Сборка углового пенала', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 8},
+                    {'title': 'Монтаж напольного шкафа Eco', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 9},
+                    {'title': 'Установка тумбы под раковину 120 см', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 10},
+                ]
+            },
+            {
+                'title': 'Установка раковины',
+                'slug': 'sink-installation',
+                'banner_image_url': 'https://pub-c89ea2f5dd1f4b3cbd80c0e00eefedc4.r2.dev/tutorials/sink-installation.jpg',
+                'order': 2,
+                'videos': [
+                    {'title': 'Монтаж накладной раковины', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 1},
+                    {'title': 'Установка встраиваемой раковины', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 2},
+                    {'title': 'Подключение раковины к сифону', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 3},
+                    {'title': 'Установка двойной раковины', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 4},
+                    {'title': 'Монтаж раковины на кронштейнах', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 5},
+                    {'title': 'Установка керамической раковины', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 6},
+                    {'title': 'Монтаж раковины-тюльпан', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 7},
+                    {'title': 'Установка угловой раковины', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 8},
+                    {'title': 'Подключение смесителя к раковине', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 9},
+                    {'title': 'Герметизация раковины силиконом', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 10},
+                ]
+            },
+            {
+                'title': 'Установка зеркала',
+                'slug': 'mirror-installation',
+                'banner_image_url': 'https://pub-c89ea2f5dd1f4b3cbd80c0e00eefedc4.r2.dev/tutorials/mirror-installation.jpg',
+                'order': 3,
+                'videos': [
+                    {'title': 'Монтаж зеркала с подсветкой', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 1},
+                    {'title': 'Установка зеркального шкафа', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 2},
+                    {'title': 'Подключение светодиодной подсветки', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 3},
+                    {'title': 'Монтаж зеркала на клей', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 4},
+                    {'title': 'Установка круглого зеркала', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 5},
+                    {'title': 'Монтаж зеркала с полкой', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 6},
+                    {'title': 'Установка зеркала с подогревом', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 7},
+                    {'title': 'Подключение сенсорного выключателя', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 8},
+                    {'title': 'Монтаж панорамного зеркала', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 9},
+                    {'title': 'Установка зеркала с рамой', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 10},
+                ]
+            },
+            {
+                'title': 'Установка смесителя',
+                'slug': 'faucet-installation',
+                'banner_image_url': 'https://pub-c89ea2f5dd1f4b3cbd80c0e00eefedc4.r2.dev/tutorials/faucet-installation.jpg',
+                'order': 4,
+                'videos': [
+                    {'title': 'Установка однорычажного смесителя', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 1},
+                    {'title': 'Монтаж смесителя с душем', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 2},
+                    {'title': 'Подключение смесителя к водопроводу', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 3},
+                    {'title': 'Установка термостатического смесителя', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 4},
+                    {'title': 'Монтаж встраиваемого смесителя', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 5},
+                    {'title': 'Установка смесителя для ванны', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 6},
+                    {'title': 'Подключение гибких подводок', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 7},
+                    {'title': 'Монтаж кухонного смесителя', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 8},
+                    {'title': 'Установка бесконтактного смесителя', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 9},
+                    {'title': 'Замена картриджа в смесителе', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 10},
+                ]
+            },
+            {
+                'title': 'Установка водонагревателя',
+                'slug': 'water-heater-installation',
+                'banner_image_url': 'https://pub-c89ea2f5dd1f4b3cbd80c0e00eefedc4.r2.dev/tutorials/water-heater-installation.jpg',
+                'order': 5,
+                'videos': [
+                    {'title': 'Монтаж накопительного водонагревателя 50л', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 1},
+                    {'title': 'Установка проточного водонагревателя', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 2},
+                    {'title': 'Подключение водонагревателя к электросети', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 3},
+                    {'title': 'Монтаж бойлера косвенного нагрева', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 4},
+                    {'title': 'Установка предохранительного клапана', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 5},
+                    {'title': 'Подключение водонагревателя к водопроводу', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 6},
+                    {'title': 'Монтаж горизонтального бойлера', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 7},
+                    {'title': 'Установка группы безопасности', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 8},
+                    {'title': 'Настройка температуры водонагревателя', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 9},
+                    {'title': 'Обслуживание и чистка бойлера', 'youtube_video_id': 'dQw4w9WgXcQ', 'order': 10},
+                ]
+            },
+        ]
+
+        # Create categories and videos
+        for cat_data in categories_data:
+            # Create category
+            category, created = TutorialCategory.objects.update_or_create(
+                slug=cat_data['slug'],
+                defaults={
+                    'title': cat_data['title'],
+                    'banner_image_url': cat_data['banner_image_url'],
+                    'order': cat_data['order'],
+                    'is_active': True,
+                }
+            )
+            tutorial_categories.append(category)
+            status = '✓ Создана' if created else '↻ Обновлена'
+            self.stdout.write(f'  {status}: {category.title} ({len(cat_data["videos"])} видео)')
+
+            # Create videos for this category
+            for video_data in cat_data['videos']:
+                video, created = TutorialVideo.objects.update_or_create(
+                    category=category,
+                    title=video_data['title'],  # Use title as unique key instead of youtube_video_id
+                    defaults={
+                        'youtube_video_id': video_data['youtube_video_id'],
+                        'order': video_data['order'],
+                    }
+                )
+                tutorial_videos.append(video)
+
+        return tutorial_categories, tutorial_videos

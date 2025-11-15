@@ -3,7 +3,8 @@ DRF Serializers for Products App
 """
 
 from rest_framework import serializers
-from apps.products.models import Section, Brand, Category, Collection, Type, Product
+from apps.products import models
+from apps.products.models import Section, Brand, Category, Collection, Type, Product, TutorialCategory, TutorialVideo
 
 
 class SectionSerializer(serializers.ModelSerializer):
@@ -211,3 +212,60 @@ class SearchResultSerializer(serializers.Serializer):
     # Additional fields
     slug = serializers.CharField(required=False, allow_null=True)
     image = serializers.CharField(required=False, allow_null=True)
+
+
+class TutorialVideoSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Tutorial Video
+
+    Returns video data in format compatible with frontend EmbeddedVideoPlayer component:
+    {
+        "id": 1,
+        "title": "Сборка шкафа-купе",
+        "videoId": "dQw4w9WgXcQ"
+    }
+    """
+    videoId = serializers.CharField(source='youtube_video_id', read_only=True)
+
+    class Meta:
+        model = models.TutorialVideo
+        fields = [
+            'id',
+            'title',
+            'videoId',  # Frontend expects 'videoId', not 'youtube_video_id'
+        ]
+
+
+class TutorialCategorySerializer(serializers.ModelSerializer):
+    """
+    Serializer for Tutorial Category
+
+    Returns category data with nested videos in format compatible with frontend:
+    {
+        "id": 1,
+        "title": "Установка мебели",
+        "slug": "furniture-installation",
+        "banner_image_url": "https://...",
+        "videos": [
+            {"id": 1, "title": "Сборка шкафа-купе", "videoId": "dQw4w9WgXcQ"},
+            ...
+        ]
+    }
+    """
+    videos = TutorialVideoSerializer(many=True, read_only=True)
+    # Alias for frontend compatibility
+    pageTitle = serializers.CharField(source='title', read_only=True)
+    pageBannerUrl = serializers.CharField(source='banner_image_url', read_only=True)
+
+    class Meta:
+        model = models.TutorialCategory
+        fields = [
+            'id',
+            'title',
+            'slug',
+            'banner_image_url',
+            'videos',
+            # Frontend compatibility aliases
+            'pageTitle',
+            'pageBannerUrl',
+        ]

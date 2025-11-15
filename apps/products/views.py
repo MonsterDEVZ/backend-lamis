@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 
-from apps.products.models import Section, Brand, Category, Collection, Type, Product
+from apps.products.models import Section, Brand, Category, Collection, Type, Product, TutorialCategory, TutorialVideo
 from apps.products.serializers import (
     SectionSerializer,
     BrandSerializer,
@@ -19,7 +19,8 @@ from apps.products.serializers import (
     TypeSerializer,
     ProductListSerializer,
     ProductDetailSerializer,
-    ProductCreateUpdateSerializer
+    ProductCreateUpdateSerializer,
+    TutorialCategorySerializer,
 )
 from apps.products.filters import ProductFilter, BrandFilter, CategoryFilter, CollectionFilter, TypeFilter
 from apps.products.permissions import IsAdminOrReadOnly, IsAdmin
@@ -400,3 +401,40 @@ class ProductViewSet(viewsets.ModelViewSet):
         elif self.action in ['create', 'update', 'partial_update']:
             return ProductCreateUpdateSerializer
         return ProductListSerializer
+
+
+class TutorialCategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for Tutorial Categories (Read-Only)
+
+    Public endpoints (GET):
+    - list: GET /api/v1/tutorials/
+      Returns all active tutorial categories
+
+    - retrieve: GET /api/v1/tutorials/{slug}/
+      Returns specific category with all its videos
+
+    Example response for retrieve:
+    {
+        "id": 1,
+        "title": "Установка мебели",
+        "slug": "furniture-installation",
+        "banner_image_url": "https://...",
+        "pageTitle": "Установка мебели",
+        "pageBannerUrl": "https://...",
+        "videos": [
+            {
+                "id": 1,
+                "title": "Сборка шкафа-купе",
+                "videoId": "dQw4w9WgXcQ"
+            },
+            ...
+        ]
+    }
+
+    Admin operations (POST/PUT/DELETE) should be done through Django Admin panel.
+    """
+    queryset = TutorialCategory.objects.filter(is_active=True).prefetch_related('videos')
+    serializer_class = TutorialCategorySerializer
+    permission_classes = [AllowAny]  # Public access
+    lookup_field = 'slug'  # Use slug instead of id for URLs

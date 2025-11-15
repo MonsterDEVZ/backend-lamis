@@ -355,3 +355,103 @@ class Product(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.brand.name})"
+
+
+class TutorialCategory(models.Model):
+    """
+    Tutorial Category Model (Категория видео уроков)
+
+    Examples: "Установка мебели", "Установка раковины", etc.
+    Each category has a hero banner and multiple tutorial videos.
+
+    Fields:
+        title: Category name (e.g. "Установка мебели")
+        slug: URL-friendly slug (e.g. "furniture-installation")
+        banner_image_url: Hero section background image URL
+        order: Display order (lower number = higher priority)
+        is_active: Whether category is visible on frontend
+    """
+
+    title = models.CharField(
+        max_length=200,
+        verbose_name="Название категории",
+        help_text="Например: Установка мебели"
+    )
+    slug = models.SlugField(
+        max_length=250,
+        unique=True,
+        verbose_name="URL slug",
+        help_text="Например: furniture-installation"
+    )
+    banner_image_url = models.URLField(
+        verbose_name="URL фото для hero section",
+        help_text="Фоновое изображение для hero section"
+    )
+    order = models.IntegerField(
+        default=0,
+        verbose_name="Порядок сортировки",
+        help_text="Меньшее число = выше в списке"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активна",
+        help_text="Показывать на фронтенде"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'tutorial_categories'
+        verbose_name = 'Tutorial Category'
+        verbose_name_plural = 'Tutorial Categories'
+        ordering = ['order', 'title']
+
+    def __str__(self):
+        return self.title
+
+
+class TutorialVideo(models.Model):
+    """
+    Tutorial Video Model (Видео урок в категории)
+
+    Each video belongs to a TutorialCategory and contains a YouTube video.
+
+    Fields:
+        category: Parent category (ForeignKey)
+        title: Video title (e.g. "Сборка шкафа-купе")
+        youtube_video_id: YouTube video ID (e.g. "dQw4w9WgXcQ")
+        order: Display order within category
+    """
+
+    category = models.ForeignKey(
+        TutorialCategory,
+        on_delete=models.CASCADE,
+        related_name='videos',
+        verbose_name="Категория"
+    )
+    title = models.CharField(
+        max_length=200,
+        verbose_name="Название видео",
+        help_text="Например: Сборка шкафа-купе"
+    )
+    youtube_video_id = models.CharField(
+        max_length=20,
+        verbose_name="YouTube Video ID",
+        help_text="ID видео на YouTube (например: dQw4w9WgXcQ)"
+    )
+    order = models.IntegerField(
+        default=0,
+        verbose_name="Порядок сортировки",
+        help_text="Меньшее число = выше в списке"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'tutorial_videos'
+        verbose_name = 'Tutorial Video'
+        verbose_name_plural = 'Tutorial Videos'
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f"{self.title} ({self.category.title})"
