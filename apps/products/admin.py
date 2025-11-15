@@ -5,7 +5,7 @@ Django Admin Configuration for Products App
 from django.contrib import admin
 from django.db.models import Count
 from django.utils.html import format_html
-from apps.products.models import Section, Brand, Category, Collection, Type, Product
+from apps.products.models import Section, Brand, Category, Collection, Type, Product, TutorialCategory, TutorialVideo
 
 
 @admin.register(Section)
@@ -246,3 +246,57 @@ class ProductAdmin(admin.ModelAdmin):
     list_editable = ['price', 'is_new', 'is_on_sale']
     ordering = ['-created_at']
     list_per_page = 50
+
+
+# ========================
+# Tutorial Admin Classes
+# ========================
+
+class TutorialVideoInline(admin.TabularInline):
+    """Inline редактирование видео для TutorialCategory"""
+    model = TutorialVideo
+    extra = 1
+    fields = ['title', 'youtube_video_id', 'order']
+    ordering = ['order']
+
+
+@admin.register(TutorialCategory)
+class TutorialCategoryAdmin(admin.ModelAdmin):
+    list_display = ['title', 'slug', 'order', 'is_active', 'created_at']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['title', 'slug']
+    prepopulated_fields = {'slug': ('title',)}
+    ordering = ['order', '-created_at']
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('title', 'slug', 'banner_image_url', 'order', 'is_active')
+        }),
+        ('Даты', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    readonly_fields = ['created_at', 'updated_at']
+    inlines = [TutorialVideoInline]
+
+
+@admin.register(TutorialVideo)
+class TutorialVideoAdmin(admin.ModelAdmin):
+    list_display = ['title', 'category', 'youtube_video_id', 'order', 'created_at']
+    list_filter = ['category', 'created_at']
+    search_fields = ['title', 'youtube_video_id']
+    ordering = ['category', 'order', '-created_at']
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('category', 'title', 'youtube_video_id', 'order')
+        }),
+        ('Даты', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+    readonly_fields = ['created_at']
