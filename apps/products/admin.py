@@ -405,6 +405,18 @@ class MaterialAdmin(admin.ModelAdmin):
         }),
     )
 
+    def save_model(self, request, obj, form, change):
+        """
+        Automatically assign a default category if one isn't provided.
+        """
+        if not obj.category_id:
+            default_category, created = MaterialCategory.objects.get_or_create(
+                name="Uncategorized",
+                defaults={'order': 999}  # Appear last
+            )
+            obj.category = default_category
+        super().save_model(request, obj, form, change)
+
     def is_active_icon(self, obj):
         """Display active status with icon"""
         if obj.is_active:
