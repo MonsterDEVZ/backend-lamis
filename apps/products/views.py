@@ -10,7 +10,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 
-from apps.products.models import Section, Brand, Category, Collection, Type, Product, TutorialCategory, TutorialVideo
+from apps.products.models import (
+    Section, Brand, Category, Collection, Type, Product,
+    TutorialCategory, TutorialVideo,
+    MaterialCategory, Material
+)
 from apps.products.serializers import (
     SectionSerializer,
     BrandSerializer,
@@ -22,6 +26,8 @@ from apps.products.serializers import (
     ProductCreateUpdateSerializer,
     TutorialCategorySerializer,
     PlumbingProductSerializer,
+    MaterialCategorySerializer,
+    MaterialSerializer,
 )
 from apps.products.filters import ProductFilter, BrandFilter, CategoryFilter, CollectionFilter, TypeFilter
 from apps.products.permissions import IsAdminOrReadOnly, IsAdmin
@@ -536,3 +542,121 @@ class PlumbingSectionViewSet(viewsets.ViewSet):
             result[key] = serializer.data
 
         return Response(result)
+
+
+# ========================
+# Materials for Download
+# ========================
+
+class MaterialCategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    MaterialCategory ViewSet (Read-Only for Public)
+
+    Endpoints:
+        GET /api/v1/material-categories/          - List all categories
+        GET /api/v1/material-categories/{id}/     - Get category details
+
+    Features:
+        - Public read access
+        - Returns categories ordered by order field
+        - Includes material count for each category
+    """
+    queryset = MaterialCategory.objects.all().order_by('order', 'name')
+    serializer_class = MaterialCategorySerializer
+    permission_classes = [AllowAny]
+    pagination_class = None  # No pagination for categories
+
+
+class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Material ViewSet (Read-Only for Public)
+
+    Endpoints:
+        GET /api/v1/materials/?page=1&limit=10            - List materials (paginated)
+        GET /api/v1/materials/{id}/                       - Get material details
+        GET /api/v1/materials/?category=1                 - Filter by category
+        GET /api/v1/materials/?is_active=true             - Filter by active status
+
+    Features:
+        - Public read access
+        - Pagination with customizable limit (default: 10, max: 100)
+        - Filter by category
+        - Only returns active materials by default
+        - Ordered by order field, then by created_at (newest first)
+
+    Query Parameters:
+        - page: Page number (default: 1)
+        - limit: Items per page (default: 10, max: 100)
+        - category: Filter by category ID
+        - is_active: Filter by active status (default: true)
+
+    Response Format:
+        {
+            "count": 25,
+            "total_pages": 3,
+            "current_page": 1,
+            "page_size": 10,
+            "next": "http://api.example.com/materials/?page=2",
+            "previous": null,
+            "results": [...]
+        }
+    """
+    serializer_class = MaterialSerializer
+    permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['category', 'is_active']
+    search_fields = ['title', 'description']
+    ordering_fields = ['order', 'created_at', 'title']
+    ordering = ['order', '-created_at']
+
+    def get_queryset(self):
+        """
+        Return active materials by default.
+        Admin can see all materials by passing is_active=false.
+        """
+        queryset = Material.objects.select_related('category').all()
+
+        # By default, only show active materials
+        is_active = self.request.query_params.get('is_active', 'true')
+        if is_active.lower() in ['true', '1', 'yes']:
+            queryset = queryset.filter(is_active=True)
+        elif is_active.lower() in ['false', '0', 'no']:
+            queryset = queryset.filter(is_active=False)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        """
+        Custom list method with enhanced pagination info.
+        Adds total_pages, current_page, and page_size to response.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Get page size from query params (default: 10, max: 100)
+        try:
+            page_size = int(request.query_params.get('limit', 10))
+            page_size = min(page_size, 100)  # Max 100 items per page
+            page_size = max(page_size, 1)    # Min 1 item per page
+        except (ValueError, TypeError):
+            page_size = 10
+
+        # Paginate queryset
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response = self.get_paginated_response(serializer.data)
+
+            # Add custom pagination metadata
+            total_count = queryset.count()
+            total_pages = (total_count + page_size - 1) // page_size  # Ceiling division
+            current_page = int(request.query_params.get('page', 1))
+
+            response.data['total_pages'] = total_pages
+            response.data['current_page'] = current_page
+            response.data['page_size'] = page_size
+
+            return response
+
+        # Fallback if pagination is disabled
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

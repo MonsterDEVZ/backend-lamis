@@ -5,7 +5,11 @@ Django Admin Configuration for Products App
 from django.contrib import admin
 from django.db.models import Count
 from django.utils.html import format_html
-from apps.products.models import Section, Brand, Category, Collection, Type, Product, TutorialCategory, TutorialVideo
+from apps.products.models import (
+    Section, Brand, Category, Collection, Type, Product,
+    TutorialCategory, TutorialVideo,
+    MaterialCategory, Material
+)
 
 
 @admin.register(Section)
@@ -310,6 +314,149 @@ class TutorialVideoAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ['created_at']
+
+    class Media:
+        css = {
+            'all': ('admin/css/custom_admin.css',)
+        }
+
+
+# ========================
+# Materials Admin Classes
+# ========================
+
+@admin.register(MaterialCategory)
+class MaterialCategoryAdmin(admin.ModelAdmin):
+    """Admin interface for Material Categories"""
+
+    list_display = ['name', 'order', 'material_count_display', 'slug', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['name', 'slug', 'description']
+    ordering = ['order', 'name']
+    readonly_fields = ['slug', 'created_at', 'material_count_display']
+    list_per_page = 50
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('name', 'slug', 'description', 'order')
+        }),
+        ('Статистика', {
+            'fields': ('material_count_display', 'created_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def material_count_display(self, obj):
+        """Display count of active materials in this category"""
+        count = obj.materials.filter(is_active=True).count()
+        total = obj.materials.count()
+        if count > 0:
+            return format_html(
+                '<a href="/admin/products/material/?category__id__exact={}" style="color: #417690; font-weight: bold;">'
+                '{} активных ({} всего)</a>',
+                obj.id, count, total
+            )
+        return format_html('<span style="color: #999;">0 материалов</span>')
+    material_count_display.short_description = 'Материалы'
+
+    def get_queryset(self, request):
+        """Optimized queryset"""
+        queryset = super().get_queryset(request)
+        queryset = queryset.annotate(
+            _material_count=Count('materials', distinct=True)
+        )
+        return queryset
+
+    class Media:
+        css = {
+            'all': ('admin/css/custom_admin.css',)
+        }
+
+
+@admin.register(Material)
+class MaterialAdmin(admin.ModelAdmin):
+    """Admin interface for Materials (Downloadable Files)"""
+
+    list_display = [
+        'title',
+        'category',
+        'is_active_icon',
+        'order',
+        'file_link_display',
+        'created_at',
+        'updated_at'
+    ]
+    list_filter = ['category', 'is_active', 'created_at', 'updated_at']
+    search_fields = ['title', 'description']
+    ordering = ['order', '-created_at']
+    readonly_fields = ['created_at', 'updated_at']
+    list_editable = ['order']
+    list_per_page = 50
+    date_hierarchy = 'created_at'
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('title', 'description', 'category', 'file_url'),
+            'description': 'Основные данные материала'
+        }),
+        ('Настройки отображения', {
+            'fields': ('order', 'is_active'),
+            'description': 'Порядок сортировки и видимость на сайте'
+        }),
+        ('Даты', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def is_active_icon(self, obj):
+        """Display active status with icon"""
+        if obj.is_active:
+            return format_html(
+                '<span style="color: #4CAF50; font-size: 18px;">✓</span> Активен'
+            )
+        return format_html(
+            '<span style="color: #F44336; font-size: 18px;">✗</span> Неактивен'
+        )
+    is_active_icon.short_description = 'Статус'
+
+    def file_link_display(self, obj):
+        """Display clickable file link"""
+        if obj.file_url:
+            # Truncate long URLs for display
+            display_url = obj.file_url if len(obj.file_url) <= 50 else obj.file_url[:47] + '...'
+            return format_html(
+                '<a href="{}" target="_blank" style="color: #2196F3;">{}</a>',
+                obj.file_url, display_url
+            )
+        return format_html('<span style="color: #999;">—</span>')
+    file_link_display.short_description = 'Файл'
+
+    actions = ['activate_materials', 'deactivate_materials', 'duplicate_materials']
+
+    def activate_materials(self, request, queryset):
+        """Bulk action: Activate selected materials"""
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f'Активировано материалов: {updated}')
+    activate_materials.short_description = "✓ Активировать выбранные материалы"
+
+    def deactivate_materials(self, request, queryset):
+        """Bulk action: Deactivate selected materials"""
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f'Деактивировано материалов: {updated}')
+    deactivate_materials.short_description = "✗ Деактивировать выбранные материалы"
+
+    def duplicate_materials(self, request, queryset):
+        """Bulk action: Duplicate selected materials"""
+        duplicated_count = 0
+        for material in queryset:
+            material.pk = None
+            material.title = f"{material.title} (копия)"
+            material.is_active = False  # Deactivate copies by default
+            material.save()
+            duplicated_count += 1
+        self.message_user(request, f'Создано копий материалов: {duplicated_count}')
+    duplicate_materials.short_description = "Дублировать выбранные материалы"
 
     class Media:
         css = {

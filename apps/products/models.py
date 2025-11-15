@@ -455,3 +455,124 @@ class TutorialVideo(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.category.title})"
+
+
+# ========================
+# Materials for Download
+# ========================
+
+class MaterialCategory(models.Model):
+    """
+    Material Category Model (Категория материалов для скачивания)
+
+    Examples: Каталоги, Сертификаты, Логотипы, Инструкции
+
+    Fields:
+        name: Category name (unique)
+        slug: URL-friendly slug
+        description: Optional category description
+        order: Display order
+        created_at: Timestamp
+    """
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        db_index=True,
+        verbose_name="Название категории",
+        help_text="Например: Каталоги, Сертификаты, Логотипы"
+    )
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
+    description = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Описание",
+        help_text="Описание категории материалов"
+    )
+    order = models.IntegerField(
+        default=0,
+        verbose_name="Порядок сортировки",
+        help_text="Меньшее число = выше в списке"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'material_categories'
+        verbose_name = 'Material Category'
+        verbose_name_plural = 'Material Categories'
+        ordering = ['order', 'name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class Material(models.Model):
+    """
+    Material Model (Материал для скачивания - PDF, картинки, архивы, etc.)
+
+    Materials that can be downloaded from the website.
+
+    Fields:
+        title: Material title (required, max 255 chars)
+        description: Optional long text description
+        file_url: URL to the file (required)
+        category: Foreign Key to MaterialCategory (required)
+        order: Manual sort order (number)
+        is_active: Checkbox for enabling/disabling (default True)
+        created_at: Auto timestamp
+        updated_at: Auto timestamp
+    """
+
+    title = models.CharField(
+        max_length=255,
+        verbose_name="Название материала",
+        help_text="Например: Каталог продукции 2024"
+    )
+    description = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Описание",
+        help_text="Подробное описание материала"
+    )
+    file_url = models.URLField(
+        max_length=500,
+        verbose_name="Ссылка на файл",
+        help_text="URL для скачивания файла (может быть внешняя ссылка или путь на сервере)"
+    )
+    category = models.ForeignKey(
+        MaterialCategory,
+        on_delete=models.PROTECT,
+        related_name='materials',
+        verbose_name="Категория",
+        help_text="Категория материала"
+    )
+    order = models.IntegerField(
+        default=0,
+        verbose_name="Порядок сортировки",
+        help_text="Меньшее число = выше в списке. Используется для ручной сортировки."
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активен",
+        help_text="Отключите, если материал устарел и не должен показываться на сайте"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'materials'
+        verbose_name = 'Material'
+        verbose_name_plural = 'Materials'
+        ordering = ['order', '-created_at']
+        indexes = [
+            models.Index(fields=['is_active', 'order']),
+            models.Index(fields=['category', 'is_active']),
+        ]
+
+    def __str__(self):
+        return self.title

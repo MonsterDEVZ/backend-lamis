@@ -310,3 +310,71 @@ class PlumbingProductSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         """Return main image URL or None"""
         return obj.main_image_url if obj.main_image_url else None
+
+
+class MaterialCategorySerializer(serializers.ModelSerializer):
+    """
+    Serializer for MaterialCategory model
+
+    Returns category data in format:
+    {
+        "id": 1,
+        "name": "Каталоги",
+        "slug": "katalogi",
+        "description": "Каталоги продукции",
+        "order": 0,
+        "material_count": 5
+    }
+    """
+    material_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.MaterialCategory
+        fields = [
+            'id',
+            'name',
+            'slug',
+            'description',
+            'order',
+            'material_count'
+        ]
+
+    def get_material_count(self, obj):
+        """Return count of active materials in this category"""
+        return obj.materials.filter(is_active=True).count()
+
+
+class MaterialSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Material model
+
+    Returns material data in format:
+    {
+        "id": 1,
+        "title": "Каталог продукции 2024",
+        "description": "Полный каталог всех товаров",
+        "file_url": "https://example.com/catalog.pdf",
+        "category": "Каталоги",
+        "category_id": 1,
+        "order": 0,
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T10:30:00Z"
+    }
+    """
+    category = serializers.CharField(source='category.name', read_only=True)
+    category_id = serializers.IntegerField(source='category.id', read_only=True)
+
+    class Meta:
+        model = models.Material
+        fields = [
+            'id',
+            'title',
+            'description',
+            'file_url',
+            'category',
+            'category_id',
+            'order',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
