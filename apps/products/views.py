@@ -574,21 +574,16 @@ class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
     Endpoints:
         GET /api/v1/materials/?page=1&limit=10            - List materials (paginated)
         GET /api/v1/materials/{id}/                       - Get material details
-        GET /api/v1/materials/?category=1                 - Filter by category
-        GET /api/v1/materials/?is_active=true             - Filter by active status
 
     Features:
         - Public read access
         - Pagination with customizable limit (default: 10, max: 100)
-        - Filter by category
-        - Only returns active materials by default
+        - Only returns all materials
         - Ordered by order field, then by created_at (newest first)
 
     Query Parameters:
         - page: Page number (default: 1)
         - limit: Items per page (default: 10, max: 100)
-        - category: Filter by category ID
-        - is_active: Filter by active status (default: true)
 
     Response Format:
         {
@@ -603,26 +598,12 @@ class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
     """
     serializer_class = MaterialSerializer
     permission_classes = [AllowAny]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category', 'is_active']
-    search_fields = ['title', 'description']
-    ordering_fields = ['order', 'created_at', 'title']
-    ordering = ['order', '-created_at']
 
     def get_queryset(self):
         """
-        Return active materials by default.
-        Admin can see all materials by passing is_active=false.
+        Return all materials.
         """
         queryset = Material.objects.select_related('category').all()
-
-        # By default, only show active materials
-        is_active = self.request.query_params.get('is_active', 'true')
-        if is_active.lower() in ['true', '1', 'yes']:
-            queryset = queryset.filter(is_active=True)
-        elif is_active.lower() in ['false', '0', 'no']:
-            queryset = queryset.filter(is_active=False)
-
         return queryset
 
     def list(self, request, *args, **kwargs):
