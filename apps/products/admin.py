@@ -259,6 +259,11 @@ class TutorialVideoInline(admin.TabularInline):
     fields = ['title', 'youtube_video_id', 'order']
     ordering = ['order']
 
+    class Media:
+        css = {
+            'all': ('admin/css/custom_admin.css',)
+        }
+
 
 @admin.register(TutorialCategory)
 class TutorialCategoryAdmin(admin.ModelAdmin):
@@ -281,6 +286,11 @@ class TutorialCategoryAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
     inlines = [TutorialVideoInline]
 
+    class Media:
+        css = {
+            'all': ('admin/css/custom_admin.css',)
+        }
+
 
 @admin.register(TutorialVideo)
 class TutorialVideoAdmin(admin.ModelAdmin):
@@ -300,3 +310,8 @@ class TutorialVideoAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ['created_at']
+
+    class Media:
+        css = {
+            'all': ('admin/css/custom_admin.css',)
+        }
