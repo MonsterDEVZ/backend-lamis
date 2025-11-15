@@ -1,320 +1,1048 @@
-/* 
- * Custom Django Admin CSS for Tutorial Section
- * Theme: White, Minimalist
+/*
+ * ============================================================
+ * CUSTOM DJANGO ADMIN CSS - WHITE MINIMALIST THEME
+ * Based on Jasmine CSS Framework principles
+ * ============================================================
  */
 
-/* 1. ОБЩИЕ СТИЛИ */
+/* ============================================================
+ * 1. CSS VARIABLES - COLORS & SPACING
+ * ============================================================ */
+:root {
+  /* Primary Colors */
+  --primary-color: #2196F3;
+  --primary-hover: #1976D2;
+  --primary-light: #E3F2FD;
+
+  /* Success Colors */
+  --success-color: #4CAF50;
+  --success-hover: #45A049;
+  --success-light: #E8F5E9;
+  --success-dark: #2E7D32;
+
+  /* Danger Colors */
+  --danger-color: #F44336;
+  --danger-hover: #DA190B;
+  --danger-light: #FFEBEE;
+  --danger-dark: #C62828;
+
+  /* Warning Colors */
+  --warning-color: #FF9800;
+  --warning-hover: #F57C00;
+  --warning-light: #FFF3E0;
+  --warning-dark: #E65100;
+
+  /* Neutral Colors */
+  --white: #FFFFFF;
+  --gray-50: #FAFAFA;
+  --gray-100: #F5F5F5;
+  --gray-200: #F0F0F0;
+  --gray-300: #E0E0E0;
+  --gray-400: #D0D0D0;
+  --gray-500: #999999;
+  --gray-600: #666666;
+  --gray-900: #2C2C2C;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+
+  /* Border Radius */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  /* Typography */
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.15);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}
+
+/* ============================================================
+ * 2. GLOBAL STYLES
+ * ============================================================ */
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background-color: #fafafa;
-  color: #2c2c2c;
-  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--gray-50);
+  color: var(--gray-900);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+#container {
+  background-color: var(--white);
+  min-height: 100vh;
 }
 
 #content {
-  background-color: #ffffff;
+  background-color: var(--white);
+  padding: var(--spacing-2xl);
 }
 
 a {
-  color: #2196f3;
+  color: var(--primary-color);
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
 a:hover {
+  color: var(--primary-hover);
   text-decoration: underline;
-  color: #1976d2;
 }
 
-/* 2. ТАБЛИЦА (LIST VIEW) */
+a:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+ * 3. HEADER & BRANDING
+ * ============================================================ */
+#header {
+  background: linear-gradient(135deg, var(--white) 0%, var(--gray-50) 100%);
+  border-bottom: 2px solid var(--gray-300);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+#branding {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+#branding h1 {
+  margin: 0;
+  padding: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+#branding h1 a {
+  color: var(--gray-900);
+  text-decoration: none;
+  transition: color var(--transition-base);
+}
+
+#branding h1 a:hover {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+#user-tools {
+  float: right;
+  margin: 0;
+  padding: var(--spacing-sm) 0;
+  font-size: var(--font-size-sm);
+  display: flex;
+  gap: var(--spacing-lg);
+  align-items: center;
+}
+
+#user-tools a {
+  color: var(--gray-600);
+  font-weight: 500;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+#user-tools a:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+/* ============================================================
+ * 4. BREADCRUMBS
+ * ============================================================ */
+.breadcrumbs {
+  background-color: var(--gray-100);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-bottom: 1px solid var(--gray-300);
+  font-size: var(--font-size-sm);
+  color: var(--gray-600);
+}
+
+.breadcrumbs a {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.breadcrumbs a:hover {
+  color: var(--primary-hover);
+}
+
+/* ============================================================
+ * 5. TABLES (LIST VIEW)
+ * ============================================================ */
+#changelist {
+  background-color: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+#changelist-form {
+  padding: var(--spacing-xl);
+}
+
+.results {
+  overflow-x: auto;
+  margin-top: var(--spacing-lg);
+}
+
 .results table {
   border-collapse: collapse;
-  background-color: #ffffff;
+  background-color: var(--white);
   width: 100%;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.results thead {
+  background: linear-gradient(180deg, var(--gray-100) 0%, var(--gray-200) 100%);
 }
 
 .results th {
-  background-color: #f5f5f5;
-  border: 1px solid #e0e0e0;
-  padding: 12px 16px;
+  background-color: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  padding: var(--spacing-md) var(--spacing-lg);
   font-weight: 600;
-  color: #2c2c2c;
+  color: var(--gray-900);
+  text-align: left;
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.results th a {
+  color: var(--gray-900);
+  font-weight: 600;
+}
+
+.results th.sorted {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
 }
 
 .results td {
-  border: 1px solid #e0e0e0;
-  padding: 12px 16px;
-  color: #2c2c2c;
+  border: 1px solid var(--gray-300);
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--gray-900);
+  vertical-align: middle;
+}
+
+.results tbody tr {
+  transition: background-color var(--transition-fast);
 }
 
 .results tbody tr:nth-child(odd) {
-  background-color: #ffffff;
+  background-color: var(--white);
 }
 
 .results tbody tr:nth-child(even) {
-  background-color: #f9f9f9;
+  background-color: var(--gray-50);
 }
 
 .results tbody tr:hover {
-  background-color: #f0f0f0;
+  background-color: var(--primary-light);
+  cursor: pointer;
 }
 
-/* 3. INPUT ПОЛЯ И ФОРМЫ */
+.results tbody tr.selected {
+  background-color: var(--primary-light);
+}
+
+/* Action checkboxes */
+.action-checkbox {
+  margin: 0;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+/* ============================================================
+ * 6. FORMS & INPUT FIELDS
+ * ============================================================ */
+.form-row {
+  margin-bottom: var(--spacing-lg);
+  clear: both;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: 600;
+  color: var(--gray-900);
+  font-size: var(--font-size-sm);
+}
+
+.form-row .help {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--gray-500);
+  font-style: italic;
+}
+
+/* Input fields */
 .form-row input[type="text"],
 .form-row input[type="email"],
 .form-row input[type="url"],
+.form-row input[type="number"],
+.form-row input[type="password"],
 .form-row textarea,
 .form-row select,
-.vTextField, .vURLField {
-  background-color: #ffffff;
-  border: 1px solid #d0d0d0;
-  padding: 10px 12px;
-  border-radius: 4px;
-  color: #2c2c2c;
-  font-size: 14px;
+.vTextField,
+.vURLField,
+.vLargeTextField,
+.vIntegerField {
+  background-color: var(--white);
+  border: 2px solid var(--gray-300);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  color: var(--gray-900);
+  font-size: var(--font-size-base);
+  font-family: var(--font-family);
   width: 100%;
-  box-sizing: border-box;
+  max-width: 600px;
+  transition: all var(--transition-base);
+}
+
+.form-row textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 
 .form-row input:focus,
 .form-row textarea:focus,
 .form-row select:focus,
-.vTextField:focus, .vURLField:focus {
+.vTextField:focus,
+.vURLField:focus,
+.vLargeTextField:focus {
   outline: none;
-  border: 2px solid #2196f3;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.form-row input:disabled,
+.form-row textarea:disabled,
+.form-row select:disabled {
+  background-color: var(--gray-100);
+  color: var(--gray-500);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #999999;
+  color: var(--gray-500);
+  font-style: italic;
 }
 
-input[type="checkbox"] {
+/* Checkbox & Radio */
+input[type="checkbox"],
+input[type="radio"] {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #4caf50;
+  accent-color: var(--success-color);
+  margin-right: var(--spacing-sm);
 }
 
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #2c2c2c;
+/* Select dropdown */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
 }
 
-/* 4. КНОПКИ */
+/* ============================================================
+ * 7. BUTTONS
+ * ============================================================ */
+.button,
 .submit-row input,
-.submit-row input:hover,
-.button, .button:hover {
-  background-color: #4caf50;
-  color: #ffffff;
+input[type="submit"],
+input[type="button"],
+button,
+.addlink,
+.changelink {
+  display: inline-block;
+  padding: var(--spacing-sm) var(--spacing-xl);
   border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 600;
   cursor: pointer;
-  font-weight: 500;
-  font-size: 14px;
-  transition: background-color 0.2s ease;
+  text-decoration: none;
+  text-align: center;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
 }
 
-.button:hover {
-  background-color: #45a049;
+/* Primary button (Save) */
+.button,
+.submit-row input[name="_save"],
+.submit-row input[name="_continue"],
+input[type="submit"] {
+  background: linear-gradient(135deg, var(--success-color) 0%, var(--success-hover) 100%);
+  color: var(--white);
 }
 
-.button.secondary {
-  background-color: #f5f5f5;
-  color: #2c2c2c;
-  border: 1px solid #d0d0d0;
+.button:hover,
+.submit-row input[name="_save"]:hover,
+.submit-row input[name="_continue"]:hover,
+input[type="submit"]:hover {
+  background: var(--success-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
-.button.secondary:hover {
-  background-color: #e0e0e0;
+.button:active,
+input[type="submit"]:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
-.deletelink, .deletelink:hover {
-  background-color: #f44336;
-  color: #ffffff;
-  padding: 10px 15px;
-  border-radius: 4px;
+/* Secondary button */
+.button.secondary,
+input[type="button"] {
+  background-color: var(--gray-100);
+  color: var(--gray-900);
+  border: 2px solid var(--gray-300);
+}
+
+.button.secondary:hover,
+input[type="button"]:hover {
+  background-color: var(--gray-200);
+  border-color: var(--gray-400);
+}
+
+/* Delete button */
+.deletelink,
+.deletelink-box,
+input[name="_delete"] {
+  background: linear-gradient(135deg, var(--danger-color) 0%, var(--danger-hover) 100%);
+  color: var(--white);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.deletelink:hover,
+.deletelink-box:hover,
+input[name="_delete"]:hover {
+  background: var(--danger-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
   text-decoration: none;
 }
 
-.deletelink:hover {
-  background-color: #da190b;
+/* Add link */
+.addlink {
+  background-color: var(--primary-color);
+  color: var(--white);
 }
 
-/* 5. FIELDSETS (БЛОКИ ФОРМЫ) */
+.addlink:hover {
+  background-color: var(--primary-hover);
+  text-decoration: none;
+}
+
+/* Change link */
+.changelink {
+  background-color: var(--gray-100);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.changelink:hover {
+  background-color: var(--primary-light);
+  text-decoration: none;
+}
+
+/* ============================================================
+ * 8. FIELDSETS & MODULE
+ * ============================================================ */
 fieldset.module {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 20px;
-  margin-bottom: 24px;
-  background-color: #ffffff;
+  border: 2px solid var(--gray-300);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-2xl);
+  background-color: var(--white);
+  box-shadow: var(--shadow-sm);
 }
 
 fieldset.module h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #2c2c2c;
-  margin-bottom: 16px;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 12px;
-  background: none;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: calc(-1 * var(--spacing-xl)) calc(-1 * var(--spacing-xl)) var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-200) 100%);
+  border-bottom: 2px solid var(--gray-300);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
-.form-row {
-  margin-bottom: 16px;
+fieldset.collapsed {
+  border-color: var(--gray-300);
 }
 
-/* 6. SIDEBAR (ФИЛЬТРЫ) */
-#changelist-filter {
-  background-color: #fafafa;
-  border-left: 1px solid #e0e0e0;
-  padding: 20px;
+fieldset.collapsed h2 {
+  background-color: var(--gray-100);
 }
 
-#changelist-filter h2 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #2c2c2c;
-  margin-bottom: 12px;
-}
-
-#changelist-filter ul li {
-  list-style: none;
-  padding: 8px 12px;
-  margin-bottom: 4px;
-}
-
-#changelist-filter ul li a {
-  color: #666666;
-}
-
-#changelist-filter ul li.selected a {
-  color: #2196f3;
-  font-weight: 600;
-}
-
-#changelist-filter ul li:hover {
-  background-color: #f0f0f0;
-}
-
-/* 7. INLINE РЕДАКТОР */
+/* ============================================================
+ * 9. INLINE EDITOR (TABULAR & STACKED)
+ * ============================================================ */
 .inline-group {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 20px;
-  margin-bottom: 24px;
-  background-color: #ffffff;
+  border: 2px solid var(--primary-color);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  margin-bottom: var(--spacing-2xl);
+  background-color: var(--white);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
 }
 
 .inline-group h2 {
-    background: #f5f5f5;
-    color: #2c2c2c;
-    padding: 12px 16px;
-    border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  color: var(--white);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  border: none;
+}
+
+.inline-group .tabular {
+  padding: var(--spacing-lg);
 }
 
 .inline-group table {
   width: 100%;
-  margin-top: 12px;
+  margin-top: var(--spacing-md);
+  border-collapse: collapse;
 }
 
 .inline-group th {
-  background-color: #f5f5f5;
-  border: 1px solid #e0e0e0;
-  padding: 12px 16px;
+  background-color: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  padding: var(--spacing-md) var(--spacing-lg);
   font-weight: 600;
-  color: #2c2c2c;
+  color: var(--gray-900);
+  text-align: left;
+  font-size: var(--font-size-sm);
 }
 
 .inline-group td {
-  border: 1px solid #e0e0e0;
-  padding: 12px 16px;
+  border: 1px solid var(--gray-300);
+  padding: var(--spacing-sm) var(--spacing-md);
+  vertical-align: top;
+}
+
+.inline-group tr.add-row {
+  background-color: var(--success-light);
 }
 
 .inline-group tr.add-row a {
-  color: #4CAF50;
-}
-
-/* 8. СООБЩЕНИЯ И ALERTS */
-ul.messagelist li.success {
-  background-color: #e8f5e9;
-  border-left: 4px solid #4caf50;
-  color: #2e7d32;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  border-radius: 4px;
-}
-
-ul.messagelist li.error {
-  background-color: #ffebee;
-  border-left: 4px solid #f44336;
-  color: #c62828;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  border-radius: 4px;
-}
-
-ul.messagelist li.warning {
-  background-color: #fff3e0;
-  border-left: 4px solid #ff9800;
-  color: #e65100;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  border-radius: 4px;
-}
-
-/* 9. HEADER И NAVBAR */
-#header {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 10px 20px;
-  color: #2c2c2c;
-}
-
-#header h1 a {
-  font-size: 24px;
+  color: var(--success-color);
   font-weight: 600;
-  color: #2c2c2c;
-  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  display: inline-block;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
 }
 
-#user-tools a {
-  color: #2196f3;
+.inline-group tr.add-row a:hover {
+  background-color: var(--success-color);
+  color: var(--white);
   text-decoration: none;
 }
 
-#user-tools a:hover {
-  color: #1976d2;
+.inline-deletelink {
+  color: var(--danger-color);
+  font-weight: 600;
 }
 
-/* 10. PAGINATION */
+.inline-deletelink:hover {
+  color: var(--danger-hover);
+}
+
+/* ============================================================
+ * 10. MESSAGES & ALERTS
+ * ============================================================ */
+ul.messagelist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spacing-2xl) 0;
+}
+
+ul.messagelist li {
+  padding: var(--spacing-lg) var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border-left: 4px solid;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+ul.messagelist li.success {
+  background-color: var(--success-light);
+  border-left-color: var(--success-color);
+  color: var(--success-dark);
+}
+
+ul.messagelist li.error {
+  background-color: var(--danger-light);
+  border-left-color: var(--danger-color);
+  color: var(--danger-dark);
+}
+
+ul.messagelist li.warning {
+  background-color: var(--warning-light);
+  border-left-color: var(--warning-color);
+  color: var(--warning-dark);
+}
+
+ul.messagelist li.info {
+  background-color: var(--primary-light);
+  border-left-color: var(--primary-color);
+  color: var(--primary-hover);
+}
+
+/* ============================================================
+ * 11. FILTER SIDEBAR
+ * ============================================================ */
+#changelist-filter {
+  background-color: var(--gray-50);
+  border-left: 2px solid var(--gray-300);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+#changelist-filter h2 {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 var(--spacing-lg) 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--gray-300);
+}
+
+#changelist-filter h3 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--gray-600);
+  margin: var(--spacing-lg) 0 var(--spacing-sm) 0;
+}
+
+#changelist-filter ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spacing-lg) 0;
+}
+
+#changelist-filter ul li {
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+#changelist-filter ul li a {
+  color: var(--gray-600);
+  display: block;
+}
+
+#changelist-filter ul li.selected {
+  background-color: var(--primary-light);
+}
+
+#changelist-filter ul li.selected a {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+#changelist-filter ul li:hover {
+  background-color: var(--gray-200);
+}
+
+/* ============================================================
+ * 12. PAGINATION
+ * ============================================================ */
 .paginator {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
   justify-content: center;
-  padding: 20px;
-  background-color: #fafafa;
+  align-items: center;
+  padding: var(--spacing-xl);
+  background-color: var(--gray-50);
+  border-radius: var(--radius-md);
+  margin-top: var(--spacing-2xl);
 }
 
 .paginator a,
 .paginator span {
-  padding: 8px 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  color: #2196f3;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  color: var(--primary-color);
   text-decoration: none;
-  background-color: #ffffff;
+  background-color: var(--white);
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+  transition: all var(--transition-fast);
 }
 
 .paginator a:hover {
-  background-color: #f0f0f0;
+  background-color: var(--primary-light);
+  border-color: var(--primary-color);
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
-.paginator .current {
-  background-color: #2196f3;
-  color: #ffffff;
+.paginator .this-page {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  color: var(--white);
+  font-weight: 700;
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md);
+}
+
+.paginator .end {
+  border: none;
+  color: var(--gray-500);
+}
+
+/* ============================================================
+ * 13. SEARCH BAR
+ * ============================================================ */
+#changelist-search {
+  margin-bottom: var(--spacing-xl);
+}
+
+#changelist-search input[type="text"] {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  width: 100%;
+  max-width: 500px;
+  transition: all var(--transition-base);
+}
+
+#changelist-search input[type="text"]:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+#changelist-search input[type="submit"] {
+  margin-left: var(--spacing-sm);
+}
+
+/* ============================================================
+ * 14. OBJECT TOOLS (TOP RIGHT ACTIONS)
+ * ============================================================ */
+.object-tools {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spacing-xl) 0;
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.object-tools li {
+  display: inline-block;
+}
+
+.object-tools a {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  color: var(--white);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
   font-weight: 600;
-  border-color: #2196f3;
+  text-decoration: none;
+  display: inline-block;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.object-tools a:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.object-tools a.addlink {
+  background: linear-gradient(135deg, var(--success-color) 0%, var(--success-hover) 100%);
+}
+
+.object-tools a.addlink:hover {
+  background: var(--success-hover);
+}
+
+/* ============================================================
+ * 15. SUBMIT ROW (FORM BUTTONS AT BOTTOM)
+ * ============================================================ */
+.submit-row {
+  background-color: var(--gray-50);
+  border-top: 2px solid var(--gray-300);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  margin: var(--spacing-2xl) calc(-1 * var(--spacing-xl)) calc(-1 * var(--spacing-xl));
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  align-items: center;
+  position: sticky;
+  bottom: 0;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.submit-row input {
+  margin: 0;
+}
+
+/* ============================================================
+ * 16. CALENDAR WIDGET & DATE/TIME PICKERS
+ * ============================================================ */
+.calendarbox,
+.clockbox {
+  background-color: var(--white);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-md);
+}
+
+.calendar {
+  border-collapse: collapse;
+}
+
+.calendar th,
+.calendar td {
+  padding: var(--spacing-sm);
+  text-align: center;
+  border: 1px solid var(--gray-300);
+}
+
+.calendar th {
+  background-color: var(--gray-100);
+  font-weight: 600;
+}
+
+.calendar td a {
+  display: block;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.calendar td a:hover {
+  background-color: var(--primary-light);
+  text-decoration: none;
+}
+
+.calendar td.selected a {
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+/* ============================================================
+ * 17. ERROR MESSAGES & VALIDATION
+ * ============================================================ */
+.errorlist {
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-sm) 0;
+}
+
+.errorlist li {
+  background-color: var(--danger-light);
+  color: var(--danger-dark);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-left: 4px solid var(--danger-color);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.errors {
+  background-color: var(--danger-light);
+  border: 2px solid var(--danger-color);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* ============================================================
+ * 18. LOADING STATES & SPINNERS
+ * ============================================================ */
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--gray-300);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+ * 19. MOBILE RESPONSIVE
+ * ============================================================ */
+@media (max-width: 768px) {
+  #header {
+    padding: var(--spacing-md);
+  }
+
+  #content {
+    padding: var(--spacing-md);
+  }
+
+  .results table {
+    font-size: var(--font-size-sm);
+  }
+
+  .results th,
+  .results td {
+    padding: var(--spacing-sm);
+  }
+
+  fieldset.module {
+    padding: var(--spacing-md);
+  }
+
+  .submit-row {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .submit-row input {
+    width: 100%;
+  }
+
+  .paginator {
+    flex-wrap: wrap;
+  }
+}
+
+/* ============================================================
+ * 20. PRINT STYLES
+ * ============================================================ */
+@media print {
+  #header,
+  #changelist-filter,
+  .object-tools,
+  .submit-row,
+  .paginator {
+    display: none;
+  }
+
+  .results table {
+    border: 1px solid #000;
+  }
+
+  .results th,
+  .results td {
+    border: 1px solid #000;
+  }
+}
+
+/* ============================================================
+ * 21. ACCESSIBILITY IMPROVEMENTS
+ * ============================================================ */
+:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  * {
+    border-color: #000 !important;
+  }
+
+  .button,
+  input[type="submit"] {
+    border: 2px solid #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
