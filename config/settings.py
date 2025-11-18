@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "drf_spectacular",
+    "ckeditor",  # WYSIWYG редактор для админки
 
     # Local apps
     "apps.products",

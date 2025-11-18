@@ -8,6 +8,7 @@ from django.db import models
 from slugify import slugify  # python-slugify для транслитерации русских символов
 from django.core.validators import MinValueValidator
 from decimal import Decimal
+from ckeditor.fields import RichTextField  # WYSIWYG редактор для админки
 
 
 class Section(models.Model):
@@ -414,7 +415,23 @@ class Product(models.Model):
 
     is_new = models.BooleanField(default=False, db_index=True)
     is_on_sale = models.BooleanField(default=False, db_index=True)
-    description = models.TextField(blank=True, null=True)
+
+    # Описание с поддержкой HTML форматирования (WYSIWYG редактор)
+    description = RichTextField(
+        blank=True,
+        null=True,
+        verbose_name="Описание товара",
+        help_text="Полное описание товара с возможностью форматирования (жирный, курсив, списки и т.д.)"
+    )
+
+    # Структурированные характеристики товара
+    characteristics = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Характеристики",
+        help_text="Структурированные характеристики товара в формате [{\"key\": \"Ширина\", \"value\": \"60 см\"}, ...]"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 

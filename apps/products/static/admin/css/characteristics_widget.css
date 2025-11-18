@@ -1,0 +1,97 @@
+/**
+ * Стили для виджета характеристик товара
+ */
+
+.characteristics-widget {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+.characteristics-header h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+}
+
+.characteristics-header p {
+    margin: 0 0 15px 0;
+    font-size: 12px;
+    color: #666;
+}
+
+.characteristics-list {
+    margin-bottom: 10px;
+}
+
+.characteristic-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.characteristic-row input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: border-color 0.2s;
+}
+
+.characteristic-row input:focus {
+    outline: none;
+    border-color: #417690;
+    box-shadow: 0 0 0 2px rgba(65, 118, 144, 0.1);
+}
+
+.characteristic-row input::placeholder {
+    color: #999;
+}
+
+.remove-characteristic-btn {
+    padding: 6px 12px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.remove-characteristic-btn:hover {
+    background: #c82333;
+}
+
+.add-characteristic-btn {
+    padding: 8px 15px;
+    background: #417690;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+    font-weight: 500;
+}
+
+.add-characteristic-btn:hover {
+    background: #356578;
+}

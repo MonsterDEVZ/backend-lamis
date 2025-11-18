@@ -5,11 +5,13 @@ Django Admin Configuration for Products App
 from django.contrib import admin
 from django.db.models import Count
 from django.utils.html import format_html
+from django import forms
 from apps.products.models import (
     Section, Brand, Category, Collection, Type, Product, Color, ProductImage,
     TutorialCategory, TutorialVideo,
     MaterialCategory, Material
 )
+from apps.products.widgets import CharacteristicsWidget
 
 
 @admin.register(Section)
@@ -382,11 +384,24 @@ class ProductImageInline(admin.TabularInline):
     image_preview.short_description = 'Превью'
 
 
+class ProductAdminForm(forms.ModelForm):
+    """
+    Кастомная форма для Product с виджетом для характеристик
+    """
+    class Meta:
+        model = Product
+        fields = '__all__'
+        widgets = {
+            'characteristics': CharacteristicsWidget(),
+        }
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     """
     Admin interface for Products with color variations support
     """
+    form = ProductAdminForm  # Используем кастомную форму
 
     list_display = [
         'id', 'name', 'price', 'section', 'brand', 'category',
@@ -407,10 +422,14 @@ class ProductAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('name', 'slug', 'price', 'description')
+            'fields': ('name', 'slug', 'price')
         }),
         ('Классификация', {
             'fields': ('section', 'brand', 'category', 'collection', 'type')
+        }),
+        ('Описание и характеристики', {
+            'fields': ('description', 'characteristics'),
+            'description': 'Подробное описание товара с форматированием и структурированные характеристики'
         }),
         ('Цвет и вариации', {
             'fields': ('color', 'color_group', 'variation_count', 'variations_list'),

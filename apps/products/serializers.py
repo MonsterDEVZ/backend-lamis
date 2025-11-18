@@ -262,7 +262,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'color', 'color_group', 'color_variations',
             'colors',  # deprecated, kept for backward compatibility
             'is_new', 'is_on_sale',
-            'description',
+            'description',  # RichTextField с HTML форматированием
+            'characteristics',  # Структурированные характеристики [{"key": "...", "value": "..."}]
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
