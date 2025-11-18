@@ -11,7 +11,7 @@ from rest_framework.permissions import AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.products.models import (
-    Section, Brand, Category, Collection, Type, Product,
+    Section, Brand, Category, Collection, Type, Product, Color,
     TutorialCategory, TutorialVideo,
     MaterialCategory, Material
 )
@@ -24,6 +24,7 @@ from apps.products.serializers import (
     ProductListSerializer,
     ProductDetailSerializer,
     ProductCreateUpdateSerializer,
+    ColorSerializer,
     TutorialCategorySerializer,
     PlumbingProductSerializer,
     MaterialCategorySerializer,
@@ -351,6 +352,61 @@ class TypeViewSet(viewsets.ModelViewSet):
     ordering = ['name']
 
 
+class ColorViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for Color model (Справочник цветов)
+
+    Централизованное управление палитрой цветов для всех продуктов.
+
+    Public endpoints (GET):
+    - list: GET /api/v1/colors/
+      Returns all colors in the catalog
+
+    - retrieve: GET /api/v1/colors/{id}/
+      Returns specific color details
+
+    Admin endpoints (POST/PUT/PATCH/DELETE):
+    - create: POST /api/v1/colors/
+      Create new color in catalog
+
+    - update: PUT /api/v1/colors/{id}/
+      Full update of color
+
+    - partial_update: PATCH /api/v1/colors/{id}/
+      Partial update of color
+
+    - destroy: DELETE /api/v1/colors/{id}/
+      Delete color from catalog
+
+    Example usage:
+    ```
+    # Get all colors
+    GET /api/v1/colors/
+
+    # Create new color
+    POST /api/v1/colors/
+    {
+        "name": "Белый глянец",
+        "hex_code": "#FFFFFF"
+    }
+
+    # Create texture color
+    POST /api/v1/colors/
+    {
+        "name": "Дуб венге",
+        "texture_image": "https://storage.example.com/textures/oak-wenge.jpg"
+    }
+    ```
+    """
+    queryset = Color.objects.all()
+    serializer_class = ColorSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name']
+    ordering_fields = ['name', 'created_at']
+    ordering = ['name']
+
+
 class ProductViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Product model
@@ -392,7 +448,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     - partial_update: PATCH /api/v1/admin/products/{id}/
     - destroy: DELETE /api/v1/admin/products/{id}/
     """
-    queryset = Product.objects.select_related('section', 'brand', 'category', 'collection', 'type').all()
+    queryset = Product.objects.select_related('section', 'brand', 'category', 'collection', 'type', 'color').all()
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ProductFilter

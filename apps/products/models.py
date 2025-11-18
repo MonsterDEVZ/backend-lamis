@@ -3,6 +3,7 @@ Product-related Models for LAMIS E-commerce
 Implements Section → Category → Collection → Product hierarchy
 """
 
+import uuid
 from django.db import models
 from slugify import slugify  # python-slugify для транслитерации русских символов
 from django.core.validators import MinValueValidator
@@ -244,6 +245,69 @@ class Type(models.Model):
         return f"{self.name} ({self.category.name})"
 
 
+class Color(models.Model):
+    """
+    Color Model - Централизованный справочник цветов
+
+    Используется для:
+    - Унификации цветов во всех продуктах
+    - Возможности выбора цвета из справочника при создании продукта
+    - Поддержки как простых цветов (HEX), так и текстур (изображения)
+
+    Fields:
+        name: Название цвета (уникальное)
+        slug: URL-friendly slug (auto-generated)
+        hex_code: HEX код цвета (для простых цветов)
+        texture_image: URL изображения текстуры (для текстурных цветов)
+        created_at: Timestamp
+    """
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        db_index=True,
+        verbose_name="Название цвета",
+        help_text="Например: Белый глянец, Дуб венге, Хром"
+    )
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
+    hex_code = models.CharField(
+        max_length=7,
+        blank=True,
+        null=True,
+        verbose_name="HEX код",
+        help_text="Код цвета в формате #FFFFFF (для простых цветов)"
+    )
+    texture_image = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        verbose_name="URL текстуры",
+        help_text="URL изображения текстуры (для материалов типа дерево, камень и т.д.)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'colors'
+        verbose_name = 'Color'
+        verbose_name_plural = 'Colors'
+        ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        if self.hex_code:
+            return f"{self.name} ({self.hex_code})"
+        return self.name
+
+    @property
+    def is_texture(self):
+        """Проверяет, является ли цвет текстурой"""
+        return bool(self.texture_image)
+
+
 class Product(models.Model):
     """
     Product Model
@@ -321,7 +385,33 @@ class Product(models.Model):
     main_image_url = models.URLField(max_length=500)
     hover_image_url = models.URLField(max_length=500, blank=True, null=True)
     images = models.JSONField(default=list, blank=True)
-    colors = models.JSONField(default=list, blank=True)
+
+    # Новая система цветов
+    color = models.ForeignKey(
+        Color,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products',
+        verbose_name="Цвет",
+        help_text="Цвет продукта из справочника"
+    )
+    color_group = models.UUIDField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Группа цветовых вариаций",
+        help_text="UUID для связывания продуктов-вариаций одной модели. Продукты с одинаковым color_group являются цветовыми вариациями друг друга."
+    )
+
+    # Старое поле colors оставляем для обратной совместимости (deprecated)
+    colors = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Цвета (устаревшее)",
+        help_text="DEPRECATED: Используйте поле 'color' и 'color_group' вместо этого"
+    )
+
     is_new = models.BooleanField(default=False, db_index=True)
     is_on_sale = models.BooleanField(default=False, db_index=True)
     description = models.TextField(blank=True, null=True)
@@ -340,6 +430,7 @@ class Product(models.Model):
             models.Index(fields=['section', 'brand', 'category', 'collection']),
             models.Index(fields=['section', 'brand', 'category', 'type']),
             models.Index(fields=['is_new', 'is_on_sale']),
+            models.Index(fields=['color_group']),
         ]
 
     def save(self, *args, **kwargs):
@@ -355,6 +446,167 @@ class Product(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.brand.name})"
+
+    def get_color_variations(self):
+        """
+        Получить все цветовые вариации этого продукта.
+
+        Returns:
+            QuerySet продуктов с тем же color_group (исключая текущий продукт).
+            Пустой QuerySet если color_group не установлен.
+        """
+        if not self.color_group:
+            return Product.objects.none()
+
+        return Product.objects.filter(
+            color_group=self.color_group
+        ).exclude(
+            pk=self.pk
+        ).select_related('color')
+
+    def get_all_variations_including_self(self):
+        """
+        Получить все продукты в группе вариаций, включая текущий.
+
+        Returns:
+            QuerySet всех продуктов с тем же color_group.
+        """
+        if not self.color_group:
+            return Product.objects.filter(pk=self.pk)
+
+        return Product.objects.filter(
+            color_group=self.color_group
+        ).select_related('color')
+
+    @classmethod
+    def generate_color_group_id(cls):
+        """
+        Генерирует новый UUID для группы цветовых вариаций.
+
+        Использование:
+            product.color_group = Product.generate_color_group_id()
+        """
+        return uuid.uuid4()
+
+    def get_main_image(self):
+        """Получить главное изображение из галереи"""
+        image = self.gallery_images.filter(image_type='main').first()
+        if image:
+            return image.image_url
+        # Fallback на старое поле для обратной совместимости
+        return self.main_image_url
+
+    def get_hover_image(self):
+        """Получить hover изображение из галереи"""
+        image = self.gallery_images.filter(image_type='hover').first()
+        if image:
+            return image.image_url
+        # Fallback на старое поле для обратной совместимости
+        return self.hover_image_url
+
+    def get_gallery_images(self):
+        """Получить все изображения галереи отсортированные по порядку"""
+        return self.gallery_images.all().order_by('sort_order', 'id')
+
+
+class ProductImage(models.Model):
+    """
+    ProductImage Model - Изображения продукта (галерея)
+
+    Централизованное управление всеми изображениями продукта.
+    Заменяет старые поля main_image_url, hover_image_url и images.
+
+    Fields:
+        product: ForeignKey к Product
+        image_url: URL изображения
+        image_type: Тип изображения (main, hover, gallery)
+        sort_order: Порядок сортировки в галерее
+        alt_text: Alt текст для SEO
+        created_at: Timestamp
+
+    Примечание:
+        - У продукта может быть только одно main и одно hover изображение
+        - gallery изображений может быть сколько угодно
+        - Архитектура готова к будущей загрузке файлов (можно добавить FileField)
+    """
+
+    class ImageType(models.TextChoices):
+        MAIN = 'main', 'Главное изображение'
+        HOVER = 'hover', 'Изображение при наведении'
+        GALLERY = 'gallery', 'Галерея'
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='gallery_images',
+        verbose_name="Продукт"
+    )
+    image_url = models.URLField(
+        max_length=500,
+        verbose_name="URL изображения",
+        help_text="Ссылка на изображение"
+    )
+    # Поле для будущей поддержки загрузки файлов
+    # image_file = models.ImageField(upload_to='products/', blank=True, null=True)
+
+    image_type = models.CharField(
+        max_length=10,
+        choices=ImageType.choices,
+        default=ImageType.GALLERY,
+        verbose_name="Тип изображения",
+        help_text="main - главное, hover - при наведении, gallery - дополнительные"
+    )
+    sort_order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Порядок сортировки",
+        help_text="Меньшее число = выше в списке"
+    )
+    alt_text = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Alt текст",
+        help_text="Альтернативный текст для SEO и доступности"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'product_images'
+        verbose_name = 'Product Image'
+        verbose_name_plural = 'Product Images'
+        ordering = ['sort_order', 'id']
+        indexes = [
+            models.Index(fields=['product', 'image_type']),
+            models.Index(fields=['product', 'sort_order']),
+        ]
+
+    def __str__(self):
+        return f"{self.product.name} - {self.get_image_type_display()}"
+
+    def save(self, *args, **kwargs):
+        """
+        Обеспечивает уникальность main и hover изображений для продукта.
+        Если добавляется новое main/hover, старое становится gallery.
+        """
+        if self.image_type in ['main', 'hover']:
+            # Найти существующее изображение этого типа
+            existing = ProductImage.objects.filter(
+                product=self.product,
+                image_type=self.image_type
+            ).exclude(pk=self.pk)
+
+            # Перевести старое в gallery
+            existing.update(image_type='gallery')
+
+        super().save(*args, **kwargs)
+
+    @property
+    def is_main(self):
+        return self.image_type == 'main'
+
+    @property
+    def is_hover(self):
+        return self.image_type == 'hover'
 
 
 class TutorialCategory(models.Model):

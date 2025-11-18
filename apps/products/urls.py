@@ -11,6 +11,7 @@ from apps.products.views import (
     CategoryViewSet,
     CollectionViewSet,
     TypeViewSet,
+    ColorViewSet,
     ProductViewSet,
     TutorialCategoryViewSet,
     PlumbingSectionViewSet,
@@ -31,6 +32,7 @@ router.register(r'brands', BrandViewSet, basename='brand')
 router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'collections', CollectionViewSet, basename='collection')
 router.register(r'types', TypeViewSet, basename='type')
+router.register(r'colors', ColorViewSet, basename='color')
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'search', SearchViewSet, basename='search')
 router.register(r'tutorials', TutorialCategoryViewSet, basename='tutorial')

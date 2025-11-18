@@ -6,7 +6,7 @@ from django.contrib import admin
 from django.db.models import Count
 from django.utils.html import format_html
 from apps.products.models import (
-    Section, Brand, Category, Collection, Type, Product,
+    Section, Brand, Category, Collection, Type, Product, Color, ProductImage,
     TutorialCategory, TutorialVideo,
     MaterialCategory, Material
 )
@@ -241,15 +241,292 @@ class TypeAdmin(admin.ModelAdmin):
     export_as_csv.short_description = "Экспортировать в CSV"
 
 
+@admin.register(Color)
+class ColorAdmin(admin.ModelAdmin):
+    """
+    Admin interface for Color catalog (Справочник цветов)
+
+    Централизованное управление палитрой цветов для всех продуктов.
+    """
+
+    list_display = [
+        'id', 'name', 'color_preview', 'hex_code',
+        'texture_preview', 'product_count', 'slug', 'created_at'
+    ]
+    list_filter = ['created_at']
+    search_fields = ['name', 'slug', 'hex_code']
+    readonly_fields = ['slug', 'created_at', 'color_preview_large', 'product_count']
+    ordering = ['name']
+    list_per_page = 50
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('name', 'slug'),
+            'description': 'Название и URL slug цвета'
+        }),
+        ('Цвет', {
+            'fields': ('hex_code', 'color_preview_large'),
+            'description': 'HEX код для простых цветов (например #FFFFFF)'
+        }),
+        ('Текстура', {
+            'fields': ('texture_image',),
+            'description': 'URL изображения текстуры для материалов (дерево, камень и т.д.)',
+            'classes': ('collapse',)
+        }),
+        ('Статистика', {
+            'fields': ('product_count', 'created_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def color_preview(self, obj):
+        """Превью цвета в списке"""
+        if obj.hex_code:
+            return format_html(
+                '<div style="width: 30px; height: 30px; background-color: {}; '
+                'border: 1px solid #ccc; border-radius: 4px;"></div>',
+                obj.hex_code
+            )
+        elif obj.texture_image:
+            return format_html(
+                '<img src="{}" style="width: 30px; height: 30px; '
+                'border: 1px solid #ccc; border-radius: 4px; object-fit: cover;" />',
+                obj.texture_image
+            )
+        return format_html('<span style="color: #999;">—</span>')
+    color_preview.short_description = 'Превью'
+
+    def color_preview_large(self, obj):
+        """Большое превью цвета в форме редактирования"""
+        if obj.hex_code:
+            return format_html(
+                '<div style="width: 100px; height: 100px; background-color: {}; '
+                'border: 1px solid #ccc; border-radius: 8px;"></div>',
+                obj.hex_code
+            )
+        return format_html('<span style="color: #999;">Установите HEX код для превью</span>')
+    color_preview_large.short_description = 'Превью цвета'
+
+    def texture_preview(self, obj):
+        """Превью текстуры в списке"""
+        if obj.texture_image:
+            return format_html(
+                '<img src="{}" style="width: 30px; height: 30px; '
+                'border-radius: 4px; object-fit: cover;" />',
+                obj.texture_image
+            )
+        return format_html('<span style="color: #999;">—</span>')
+    texture_preview.short_description = 'Текстура'
+
+    def product_count(self, obj):
+        """Количество продуктов с этим цветом"""
+        count = obj.products.count()
+        if count > 0:
+            return format_html(
+                '<a href="/admin/products/product/?color__id__exact={}" '
+                'style="color: #417690; font-weight: bold;">{} товаров</a>',
+                obj.id, count
+            )
+        return format_html('<span style="color: #999;">0 товаров</span>')
+    product_count.short_description = 'Товары'
+
+    def get_queryset(self, request):
+        """Оптимизированный queryset с аннотациями"""
+        queryset = super().get_queryset(request)
+        queryset = queryset.annotate(
+            _product_count=Count('products', distinct=True)
+        )
+        return queryset
+
+    actions = ['duplicate_colors']
+
+    def duplicate_colors(self, request, queryset):
+        """Bulk action: дублировать цвета"""
+        duplicated_count = 0
+        for color in queryset:
+            color.pk = None
+            color.name = f"{color.name} (копия)"
+            color.slug = ""  # Will be auto-generated
+            color.save()
+            duplicated_count += 1
+        self.message_user(request, f'Создано копий цветов: {duplicated_count}')
+    duplicate_colors.short_description = "Дублировать выбранные цвета"
+
+    class Media:
+        css = {
+            'all': ('admin/css/custom_admin.css',)
+        }
+
+
+class ProductImageInline(admin.TabularInline):
+    """
+    Inline редактирование галереи изображений продукта.
+
+    Позволяет добавлять, удалять и сортировать изображения прямо в форме продукта.
+    """
+    model = ProductImage
+    extra = 1
+    fields = ['image_preview', 'image_url', 'image_type', 'sort_order', 'alt_text']
+    readonly_fields = ['image_preview']
+    ordering = ['sort_order', 'id']
+
+    def image_preview(self, obj):
+        """Превью изображения"""
+        if obj.image_url:
+            return format_html(
+                '<img src="{}" style="max-width: 100px; max-height: 100px; '
+                'border: 1px solid #ccc; border-radius: 4px;" />',
+                obj.image_url
+            )
+        return format_html('<span style="color: #999;">Нет изображения</span>')
+    image_preview.short_description = 'Превью'
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'price', 'section', 'brand', 'category', 'collection', 'type', 'is_new', 'is_on_sale', 'created_at']
-    list_filter = ['section', 'brand', 'category', 'collection', 'type', 'is_new', 'is_on_sale', 'created_at']
-    search_fields = ['name', 'description', 'slug', 'brand__name']
-    readonly_fields = ['slug', 'created_at', 'updated_at']
+    """
+    Admin interface for Products with color variations support
+    """
+
+    list_display = [
+        'id', 'name', 'price', 'section', 'brand', 'category',
+        'collection', 'type', 'color_display', 'variation_count',
+        'image_count', 'is_new', 'is_on_sale', 'created_at'
+    ]
+    list_filter = [
+        'section', 'brand', 'category', 'collection', 'type',
+        'color', 'is_new', 'is_on_sale', 'created_at'
+    ]
+    search_fields = ['name', 'description', 'slug', 'brand__name', 'color_group']
+    readonly_fields = ['slug', 'created_at', 'updated_at', 'variation_count', 'variations_list', 'image_count']
     list_editable = ['price', 'is_new', 'is_on_sale']
     ordering = ['-created_at']
     list_per_page = 50
+    autocomplete_fields = ['color']
+    inlines = [ProductImageInline]
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('name', 'slug', 'price', 'description')
+        }),
+        ('Классификация', {
+            'fields': ('section', 'brand', 'category', 'collection', 'type')
+        }),
+        ('Цвет и вариации', {
+            'fields': ('color', 'color_group', 'variation_count', 'variations_list'),
+            'description': 'Выберите цвет из справочника. Для связи вариаций используйте одинаковый color_group UUID.'
+        }),
+        ('Флаги', {
+            'fields': ('is_new', 'is_on_sale')
+        }),
+        ('Старые поля изображений (deprecated)', {
+            'fields': ('main_image_url', 'hover_image_url', 'images'),
+            'classes': ('collapse',),
+            'description': 'УСТАРЕЛО: Используйте галерею изображений выше. Эти поля сохранены для обратной совместимости.'
+        }),
+        ('Даты', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def image_count(self, obj):
+        """Количество изображений в галерее"""
+        count = obj.gallery_images.count()
+        if count > 0:
+            return format_html(
+                '<span style="color: #417690; font-weight: bold;">{} изобр.</span>',
+                count
+            )
+        return format_html('<span style="color: #999;">0</span>')
+    image_count.short_description = 'Галерея'
+
+    def color_display(self, obj):
+        """Отображение цвета с превью"""
+        if obj.color:
+            if obj.color.hex_code:
+                return format_html(
+                    '<span style="display: inline-flex; align-items: center;">'
+                    '<div style="width: 16px; height: 16px; background-color: {}; '
+                    'border: 1px solid #ccc; border-radius: 3px; margin-right: 5px;"></div>'
+                    '{}</span>',
+                    obj.color.hex_code, obj.color.name
+                )
+            return obj.color.name
+        return format_html('<span style="color: #999;">—</span>')
+    color_display.short_description = 'Цвет'
+
+    def variation_count(self, obj):
+        """Количество цветовых вариаций"""
+        if not obj.color_group:
+            return format_html('<span style="color: #999;">—</span>')
+
+        count = Product.objects.filter(color_group=obj.color_group).count()
+        if count > 1:
+            return format_html(
+                '<a href="/admin/products/product/?color_group={}" '
+                'style="color: #417690; font-weight: bold;">{} вариаций</a>',
+                obj.color_group, count
+            )
+        return format_html('<span style="color: #999;">1 (только этот)</span>')
+    variation_count.short_description = 'Вариации'
+
+    def variations_list(self, obj):
+        """Список всех вариаций продукта"""
+        if not obj.color_group:
+            return format_html(
+                '<span style="color: #999;">Нет группы вариаций. '
+                'Установите color_group для связи с другими цветовыми вариантами.</span>'
+            )
+
+        variations = Product.objects.filter(
+            color_group=obj.color_group
+        ).exclude(pk=obj.pk).select_related('color')
+
+        if not variations:
+            return format_html(
+                '<span style="color: #999;">Нет других вариаций в этой группе.</span>'
+            )
+
+        items = []
+        for var in variations:
+            color_name = var.color.name if var.color else 'Без цвета'
+            items.append(format_html(
+                '<li><a href="/admin/products/product/{}/change/">{}</a> ({}) </li>',
+                var.pk, var.name, color_name
+            ))
+
+        return format_html('<ul style="margin: 0; padding-left: 20px;">{}</ul>', ''.join(items))
+    variations_list.short_description = 'Связанные вариации'
+
+    def get_queryset(self, request):
+        """Оптимизированный queryset"""
+        return super().get_queryset(request).select_related(
+            'section', 'brand', 'category', 'collection', 'type', 'color'
+        )
+
+    actions = ['set_same_color_group', 'clear_color_group']
+
+    def set_same_color_group(self, request, queryset):
+        """Установить одинаковый color_group для выбранных продуктов"""
+        import uuid
+        new_group_id = uuid.uuid4()
+        updated = queryset.update(color_group=new_group_id)
+        self.message_user(
+            request,
+            f'Установлен color_group {new_group_id} для {updated} товаров. '
+            f'Теперь они являются цветовыми вариациями друг друга.'
+        )
+    set_same_color_group.short_description = "Объединить в группу вариаций"
+
+    def clear_color_group(self, request, queryset):
+        """Очистить color_group для выбранных продуктов"""
+        updated = queryset.update(color_group=None)
+        self.message_user(
+            request,
+            f'Очищен color_group для {updated} товаров.'
+        )
+    clear_color_group.short_description = "Убрать из группы вариаций"
 
 
 # ========================
