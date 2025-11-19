@@ -790,6 +790,7 @@ class Material(models.Model):
         title: Material title (required, max 255 chars)
         description: Optional long text description
         file_url: URL to the file (required)
+        image_url: URL to the image for material display (required)
         category: Foreign Key to MaterialCategory (required)
         order: Manual sort order (number)
         is_active: Checkbox for enabling/disabling (default True)
@@ -813,12 +814,11 @@ class Material(models.Model):
         verbose_name="Ссылка на файл",
         help_text="URL для скачивания файла (может быть внешняя ссылка или путь на сервере)"
     )
-    category = models.ForeignKey(
-        MaterialCategory,
-        on_delete=models.PROTECT,
-        related_name='materials',
-        verbose_name="Категория",
-        help_text="Категория материала"
+    image_url = models.URLField(
+        max_length=500,
+        verbose_name="Ссылка на картинку",
+        help_text="URL картинки для отображения материала",
+        default='https://via.placeholder.com/400x300?text=Material+Image'
     )
     order = models.IntegerField(
         default=0,
@@ -840,7 +840,6 @@ class Material(models.Model):
         ordering = ['order', '-created_at']
         indexes = [
             models.Index(fields=['is_active', 'order']),
-            models.Index(fields=['category', 'is_active']),
         ]
 
     def __str__(self):

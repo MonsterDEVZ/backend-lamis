@@ -556,15 +556,12 @@ class MaterialSerializer(serializers.ModelSerializer):
         "title": "Каталог продукции 2024",
         "description": "Полный каталог всех товаров",
         "file_url": "https://example.com/catalog.pdf",
-        "category": "Каталоги",
-        "category_id": 1,
+        "image_url": "https://example.com/catalog-preview.jpg",
         "order": 0,
         "created_at": "2024-01-15T10:30:00Z",
         "updated_at": "2024-01-15T10:30:00Z"
     }
     """
-    category = serializers.CharField(source='category.name', read_only=True)
-    category_id = serializers.IntegerField(source='category.id', read_only=True)
 
     class Meta:
         model = models.Material
@@ -573,8 +570,7 @@ class MaterialSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'file_url',
-            'category',
-            'category_id',
+            'image_url',
             'order',
             'created_at',
             'updated_at'

@@ -675,14 +675,13 @@ class MaterialAdmin(admin.ModelAdmin):
 
     list_display = [
         'title',
-        'category',
         'is_active_icon',
         'order',
         'file_link_display',
         'created_at',
         'updated_at'
     ]
-    list_filter = ['category', 'is_active', 'created_at', 'updated_at']
+    list_filter = ['is_active', 'created_at', 'updated_at']
     search_fields = ['title', 'description']
     ordering = ['order', '-created_at']
     readonly_fields = ['created_at', 'updated_at']
@@ -692,7 +691,7 @@ class MaterialAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('title', 'description', 'file_url'),
+            'fields': ('title', 'description', 'file_url', 'image_url', 'is_active', 'order'),
             'description': 'Основные данные материала'
         }),
         ('Даты', {
@@ -700,18 +699,6 @@ class MaterialAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-
-    def save_model(self, request, obj, form, change):
-        """
-        Automatically assign a default category if one isn't provided.
-        """
-        if not obj.category_id:
-            default_category, created = MaterialCategory.objects.get_or_create(
-                name="Uncategorized",
-                defaults={'order': 999}  # Appear last
-            )
-            obj.category = default_category
-        super().save_model(request, obj, form, change)
 
     def is_active_icon(self, obj):
         """Display active status with icon"""

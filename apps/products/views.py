@@ -659,7 +659,7 @@ class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Return all materials.
         """
-        queryset = Material.objects.select_related('category').all()
+        queryset = Material.objects.all()
         return queryset
 
     def list(self, request, *args, **kwargs):
