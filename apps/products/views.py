@@ -465,6 +465,82 @@ class ProductViewSet(viewsets.ModelViewSet):
             return ProductCreateUpdateSerializer
         return ProductListSerializer
 
+    def list(self, request, *args, **kwargs):
+        """
+        Переопределенный метод list для оптимизации запросов цветовых вариаций.
+
+        Предзагружает все цвета для color_groups одним запросом,
+        чтобы избежать N+1 проблемы при сериализации available_colors.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Пагинация
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            # Оптимизация: собираем все уникальные color_groups из текущей страницы
+            color_groups = set(
+                p.color_group for p in page if p.color_group
+            )
+
+            # Предзагружаем все цвета для этих групп одним запросом
+            color_groups_map = {}
+            if color_groups:
+                from apps.products.models import Color
+                colors_qs = Color.objects.filter(
+                    products__color_group__in=color_groups
+                ).distinct().prefetch_related('products')
+
+                # Группируем цвета по color_group
+                for color in colors_qs:
+                    # Получаем все color_groups для которых этот цвет доступен
+                    groups = color.products.filter(
+                        color_group__in=color_groups
+                    ).values_list('color_group', flat=True).distinct()
+
+                    for group in groups:
+                        if group not in color_groups_map:
+                            color_groups_map[group] = []
+                        if color not in color_groups_map[group]:
+                            color_groups_map[group].append(color)
+
+            # Передаем предзагруженные данные через context
+            serializer = self.get_serializer(
+                page,
+                many=True,
+                context={'color_groups_map': color_groups_map}
+            )
+            return self.get_paginated_response(serializer.data)
+
+        # Если пагинация отключена, делаем то же самое для всего queryset
+        color_groups = set(
+            p.color_group for p in queryset if p.color_group
+        )
+
+        color_groups_map = {}
+        if color_groups:
+            from apps.products.models import Color
+            colors_qs = Color.objects.filter(
+                products__color_group__in=color_groups
+            ).distinct().prefetch_related('products')
+
+            for color in colors_qs:
+                groups = color.products.filter(
+                    color_group__in=color_groups
+                ).values_list('color_group', flat=True).distinct()
+
+                for group in groups:
+                    if group not in color_groups_map:
+                        color_groups_map[group] = []
+                    if color not in color_groups_map[group]:
+                        color_groups_map[group].append(color)
+
+        serializer = self.get_serializer(
+            queryset,
+            many=True,
+            context={'color_groups_map': color_groups_map}
+        )
+        return Response(serializer.data)
+
 
 class TutorialCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """

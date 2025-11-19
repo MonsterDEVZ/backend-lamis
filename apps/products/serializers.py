@@ -190,6 +190,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     type_name = serializers.CharField(source='type.name', read_only=True, allow_null=True)
     color = ColorSerializer(read_only=True)
     has_variations = serializers.SerializerMethodField()
+    available_colors = serializers.SerializerMethodField()
 
     # Изображения из новой галереи
     main_image_url = serializers.SerializerMethodField()
@@ -205,7 +206,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             'collection', 'collection_name',
             'type', 'type_name',
             'main_image_url', 'hover_image_url',
-            'color', 'color_group', 'has_variations',
+            'color', 'color_group', 'has_variations', 'available_colors',
             'colors',  # deprecated, kept for backward compatibility
             'is_new', 'is_on_sale',
             'created_at', 'updated_at'
@@ -225,6 +226,37 @@ class ProductListSerializer(serializers.ModelSerializer):
         if not obj.color_group:
             return False
         return Product.objects.filter(color_group=obj.color_group).exclude(pk=obj.pk).exists()
+
+    def get_available_colors(self, obj):
+        """
+        Возвращает список всех доступных цветов для данного продукта.
+
+        Для оптимизации использует данные из context (если они предзагружены),
+        иначе делает запрос к базе данных.
+
+        Returns:
+            list: Список объектов цветов в формате ColorSerializer
+        """
+        # Пытаемся получить предзагруженные данные из context
+        color_groups_map = self.context.get('color_groups_map', {})
+
+        if not obj.color_group:
+            # Если нет группы вариаций, возвращаем только цвет текущего продукта
+            if obj.color:
+                return [ColorSerializer(obj.color).data]
+            return []
+
+        # Если данные предзагружены, используем их
+        if obj.color_group in color_groups_map:
+            colors = color_groups_map[obj.color_group]
+            return ColorSerializer(colors, many=True).data
+
+        # Fallback: делаем запрос (для случаев когда context не передан)
+        colors = Color.objects.filter(
+            products__color_group=obj.color_group
+        ).distinct().order_by('name')
+
+        return ColorSerializer(colors, many=True).data
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
