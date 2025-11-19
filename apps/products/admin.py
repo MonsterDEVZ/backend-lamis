@@ -436,7 +436,8 @@ class ProductAdmin(admin.ModelAdmin):
             'description': 'Выберите цвет из справочника. Для связи вариаций используйте одинаковый color_group UUID.'
         }),
         ('Флаги', {
-            'fields': ('is_new', 'is_on_sale')
+            'fields': ('is_new', 'is_on_sale'),
+            'description': 'Флаги для отображения на сайте'
         }),
         ('Старые поля изображений (deprecated)', {
             'fields': ('main_image_url', 'hover_image_url', 'images'),
@@ -523,6 +524,62 @@ class ProductAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related(
             'section', 'brand', 'category', 'collection', 'type', 'color'
         )
+
+    def get_fieldsets(self, request, obj=None):
+        """
+        Динамически изменяет fieldsets в зависимости от бренда товара.
+
+        Поле 'is_featured' (Показать на главной) отображается ТОЛЬКО для товаров
+        бренда 'Caizer', так как этот флаг управляет контентом в блоке
+        'Сантехника CAIZER' на главной странице.
+        """
+        fieldsets = super().get_fieldsets(request, obj)
+
+        # Преобразуем в изменяемую структуру
+        fieldsets = list(fieldsets)
+
+        # Проверяем, является ли товар брендом Caizer
+        is_caizer = False
+        if obj and obj.brand:
+            is_caizer = obj.brand.name.lower() == 'caizer'
+
+        # Находим раздел 'Флаги' и модифицируем его
+        for i, (name, options) in enumerate(fieldsets):
+            if name == 'Флаги':
+                fields = list(options.get('fields', []))
+
+                if is_caizer:
+                    # Добавляем is_featured для товаров Caizer
+                    if 'is_featured' not in fields:
+                        fields.append('is_featured')
+                    description = 'Флаги для отображения на сайте. Флаг "Показать на главной" управляет отображением в блоке "Сантехника CAIZER".'
+                else:
+                    # Убираем is_featured для других брендов
+                    if 'is_featured' in fields:
+                        fields.remove('is_featured')
+                    description = 'Флаги для отображения на сайте'
+
+                fieldsets[i] = (name, {
+                    **options,
+                    'fields': tuple(fields),
+                    'description': description
+                })
+                break
+
+        return fieldsets
+
+    def save_model(self, request, obj, form, change):
+        """
+        Автоматически сбрасывает is_featured=False для товаров не-Caizer брендов.
+
+        Это дополнительная защита на случай, если кто-то попытается установить
+        флаг через API или другими способами.
+        """
+        # Если бренд не Caizer, принудительно сбрасываем is_featured
+        if obj.brand and obj.brand.name.lower() != 'caizer':
+            obj.is_featured = False
+
+        super().save_model(request, obj, form, change)
 
     actions = ['set_same_color_group', 'clear_color_group']
 
