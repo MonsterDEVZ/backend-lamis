@@ -665,6 +665,7 @@ class Command(BaseCommand):
             # Random flags
             is_new = random.random() < 0.3  # 30% chance
             is_on_sale = random.random() < 0.2  # 20% chance
+            is_featured = brand.name == 'Caizer'  # Caizer products are featured on homepage
 
             # Get type using smart mapping (works for ALL categories!)
             type_obj = self.get_type_for_product(product_data['name'], category)
@@ -684,6 +685,7 @@ class Command(BaseCommand):
                     'colors': colors,
                     'is_new': is_new,
                     'is_on_sale': is_on_sale,
+                    'is_featured': is_featured,
                     'description': f'{product_data["name"]} от производителя {brand.name}. Высокое качество и надежность.'
                 }
             )
