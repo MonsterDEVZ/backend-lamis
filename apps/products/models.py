@@ -332,6 +332,7 @@ class Product(models.Model):
         colors: JSON array of color options [{name, hex}, ...]
         is_new: Flag for "Новинка" badge
         is_on_sale: Flag for "Акция" badge
+        is_featured: Flag for showing product on homepage (CAIZER section)
         description: Product description
         created_at: Timestamp when product was created
         updated_at: Timestamp when product was last updated
@@ -415,6 +416,12 @@ class Product(models.Model):
 
     is_new = models.BooleanField(default=False, db_index=True)
     is_on_sale = models.BooleanField(default=False, db_index=True)
+    is_featured = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Показать на главной",
+        help_text="Отметьте, чтобы товар отображался в блоке 'Сантехника CAIZER' на главной странице"
+    )
 
     # Описание с поддержкой HTML форматирования (WYSIWYG редактор)
     description = RichTextField(
@@ -446,7 +453,7 @@ class Product(models.Model):
             models.Index(fields=['section', 'brand', 'category']),
             models.Index(fields=['section', 'brand', 'category', 'collection']),
             models.Index(fields=['section', 'brand', 'category', 'type']),
-            models.Index(fields=['is_new', 'is_on_sale']),
+            models.Index(fields=['is_new', 'is_on_sale', 'is_featured']),
             models.Index(fields=['color_group']),
         ]
 

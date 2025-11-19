@@ -513,6 +513,8 @@ class PlumbingProductSerializer(serializers.ModelSerializer):
     {
         "id": 1,
         "name": "Раковина встраиваемая белая",
+        "slug": "rakovina-vstraivaiemaia-belaia",
+        "price": "12500.00",
         "brand": "Caizer",
         "brand_id": 3,
         "category": "Раковины",
@@ -532,6 +534,8 @@ class PlumbingProductSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'name',
+            'slug',
+            'price',
             'brand',
             'brand_id',
             'category',

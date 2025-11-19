@@ -669,7 +669,8 @@ class PlumbingSectionViewSet(viewsets.ViewSet):
 
     Public endpoint (GET):
     - GET /api/v1/plumbing-section/
-      Returns all CAIZER products grouped by categories
+      Returns FEATURED CAIZER products grouped by categories
+      (Only products with is_featured=True are shown on homepage)
 
     Example response:
     {
@@ -709,9 +710,10 @@ class PlumbingSectionViewSet(viewsets.ViewSet):
     def list(self, request):
         """
         GET /api/v1/plumbing-section/
-        Returns CAIZER products grouped by categories
+        Returns FEATURED CAIZER products grouped by categories
 
-        Uses category names instead of IDs to work across different databases
+        Only products with is_featured=True are returned (selected in Django admin).
+        Uses category names instead of IDs to work across different databases.
         """
         from django.db.models import Q
 
@@ -740,9 +742,10 @@ class PlumbingSectionViewSet(viewsets.ViewSet):
             'vanny': ['Ванны'],
         }
 
-        # Fetch all CAIZER products
+        # Fetch all FEATURED CAIZER products (only products marked for homepage)
         caizer_products = Product.objects.filter(
-            brand=caizer_brand
+            brand=caizer_brand,
+            is_featured=True  # Only show featured products on homepage
         ).select_related('section', 'brand', 'category')
 
         # Group products by category
