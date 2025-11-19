@@ -541,6 +541,90 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'], url_path='similar')
+    def similar_products(self, request, slug=None):
+        """
+        GET /api/v1/products/{slug}/similar/
+
+        Возвращает список похожих товаров для указанного продукта.
+
+        СТРОГАЯ ЛОГИКА ПОДБОРА (в порядке приоритета):
+        1. Товары из той же Collection
+        2. Товары из той же Category И того же Type
+        3. Товары из той же Category И того же Brand
+
+        Исключения:
+        - Сам исходный товар
+        - Цветовые вариации (товары с тем же color_group)
+
+        Лимит: 8 товаров (более релевантные результаты)
+        """
+        from django.db.models import Case, When, IntegerField, Q
+
+        # Получаем текущий продукт
+        product = self.get_object()
+
+        # Базовый queryset: исключаем сам продукт
+        similar_products = Product.objects.exclude(pk=product.pk)
+
+        # Исключаем товары из той же color_group (цветовые вариации)
+        if product.color_group:
+            similar_products = similar_products.exclude(color_group=product.color_group)
+
+        # Создаем условия приоритезации с помощью Case/When
+        priority_conditions = []
+
+        # ПРИОРИТЕТ 1: Та же коллекция (самый релевантный критерий)
+        if product.collection:
+            priority_conditions.append(
+                When(collection=product.collection, then=1)
+            )
+
+        # ПРИОРИТЕТ 2: Та же категория И тот же тип (строгое совпадение)
+        if product.type:
+            priority_conditions.append(
+                When(
+                    Q(category=product.category) & Q(type=product.type),
+                    then=2
+                )
+            )
+
+        # ПРИОРИТЕТ 3: Та же категория И тот же бренд (более общий критерий)
+        priority_conditions.append(
+            When(
+                Q(category=product.category) & Q(brand=product.brand),
+                then=3
+            )
+        )
+
+        # Применяем приоритезацию
+        similar_products = similar_products.annotate(
+            priority=Case(
+                *priority_conditions,
+                default=999,  # Низкий приоритет для товаров, не попавших ни в одну категорию
+                output_field=IntegerField()
+            )
+        ).filter(
+            priority__lt=999  # Берем только товары с назначенным приоритетом
+        ).select_related(
+            'section', 'brand', 'category', 'collection', 'type', 'color'
+        ).order_by(
+            'priority',  # Сначала по приоритету
+            '-created_at'  # Затем по дате создания (новые первыми)
+        )[:8]  # Ограничиваем до 8 товаров (более релевантные результаты)
+
+        # Используем ProductListSerializer для сериализации
+        serializer = ProductListSerializer(
+            similar_products,
+            many=True,
+            context=self.get_serializer_context()
+        )
+
+        return Response({
+            'count': len(similar_products),
+            'results': serializer.data
+        })
+
 
 class TutorialCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """
