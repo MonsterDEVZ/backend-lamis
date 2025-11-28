@@ -1038,6 +1038,38 @@ ul.messagelist li.info {
   }
 }
 
+/* ============================================================
+ * 22. SELECT OPTION HOVER STYLES
+ * ============================================================ */
+/* Custom hover styles for select options */
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #009b3e !important;
+  color: #ffffff !important;
+}
+
+/* For browsers that support :hover on options */
+select option:hover {
+  background: #009b3e linear-gradient(0deg, #009b3e 0%, #009b3e 100%);
+  color: #ffffff;
+}
+
+/* Webkit specific */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  select option:hover {
+    background-color: #009b3e;
+    color: #ffffff;
+  }
+}
+
+/* Action select specific */
+select[name="action"] option:hover,
+select[name="action"] option:focus {
+  background-color: #009b3e !important;
+  color: #ffffff !important;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   * {

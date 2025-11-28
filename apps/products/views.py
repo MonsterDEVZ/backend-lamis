@@ -13,7 +13,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from apps.products.models import (
     Section, Brand, Category, Collection, Type, Product, Color,
     TutorialCategory, TutorialVideo,
-    MaterialCategory, Material
+    Material
 )
 from apps.products.serializers import (
     SectionSerializer,
@@ -27,7 +27,6 @@ from apps.products.serializers import (
     ColorSerializer,
     TutorialCategorySerializer,
     PlumbingProductSerializer,
-    MaterialCategorySerializer,
     MaterialSerializer,
 )
 from apps.products.filters import ProductFilter, BrandFilter, CategoryFilter, CollectionFilter, TypeFilter
@@ -766,25 +765,6 @@ class PlumbingSectionViewSet(viewsets.ViewSet):
 # ========================
 # Materials for Download
 # ========================
-
-class MaterialCategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    MaterialCategory ViewSet (Read-Only for Public)
-
-    Endpoints:
-        GET /api/v1/material-categories/          - List all categories
-        GET /api/v1/material-categories/{id}/     - Get category details
-
-    Features:
-        - Public read access
-        - Returns categories ordered by order field
-        - Includes material count for each category
-    """
-    queryset = MaterialCategory.objects.all().order_by('order', 'name')
-    serializer_class = MaterialCategorySerializer
-    permission_classes = [AllowAny]
-    pagination_class = None  # No pagination for categories
-
 
 class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
     """

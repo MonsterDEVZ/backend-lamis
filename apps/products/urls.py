@@ -15,7 +15,6 @@ from apps.products.views import (
     ProductViewSet,
     TutorialCategoryViewSet,
     PlumbingSectionViewSet,
-    MaterialCategoryViewSet,
     MaterialViewSet
 )
 from apps.products.search_views import SearchViewSet
@@ -37,7 +36,6 @@ router.register(r'products', ProductViewSet, basename='product')
 router.register(r'search', SearchViewSet, basename='search')
 router.register(r'tutorials', TutorialCategoryViewSet, basename='tutorial')
 router.register(r'plumbing-section', PlumbingSectionViewSet, basename='plumbing-section')
-router.register(r'material-categories', MaterialCategoryViewSet, basename='material-category')
 router.register(r'materials', MaterialViewSet, basename='material')
 
 urlpatterns = [

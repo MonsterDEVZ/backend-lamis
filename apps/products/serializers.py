@@ -550,38 +550,6 @@ class PlumbingProductSerializer(serializers.ModelSerializer):
         return obj.main_image_url if obj.main_image_url else None
 
 
-class MaterialCategorySerializer(serializers.ModelSerializer):
-    """
-    Serializer for MaterialCategory model
-
-    Returns category data in format:
-    {
-        "id": 1,
-        "name": "Каталоги",
-        "slug": "katalogi",
-        "description": "Каталоги продукции",
-        "order": 0,
-        "material_count": 5
-    }
-    """
-    material_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = models.MaterialCategory
-        fields = [
-            'id',
-            'name',
-            'slug',
-            'description',
-            'order',
-            'material_count'
-        ]
-
-    def get_material_count(self, obj):
-        """Return count of active materials in this category"""
-        return obj.materials.filter(is_active=True).count()
-
-
 class MaterialSerializer(serializers.ModelSerializer):
     """
     Serializer for Material model

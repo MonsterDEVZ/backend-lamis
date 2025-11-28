@@ -338,12 +338,13 @@ class Product(models.Model):
         updated_at: Timestamp when product was last updated
     """
 
-    name = models.CharField(max_length=255, db_index=True)
-    slug = models.SlugField(max_length=300, unique=True, blank=True)
+    name = models.CharField(max_length=255, db_index=True, verbose_name="Название")
+    slug = models.SlugField(max_length=300, unique=True, blank=True, verbose_name="URL")
     price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.00'))]
+        validators=[MinValueValidator(Decimal('0.00'))],
+        verbose_name="Цена"
     )
 
     # Основные связи
@@ -351,18 +352,21 @@ class Product(models.Model):
         Section,
         on_delete=models.CASCADE,
         related_name='products',
+        verbose_name="Раздел",
         help_text="Раздел каталога"
     )
     brand = models.ForeignKey(
         Brand,
         on_delete=models.CASCADE,
         related_name='products',
+        verbose_name="Бренд",
         help_text="Производитель (обязательно)"
-    )  # ← НОВОЕ! ОБЯЗАТЕЛЬНЫЙ БРЕНД!
+    )
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
         related_name='products',
+        verbose_name="Категория",
         help_text="Категория товаров"
     )
 
@@ -373,6 +377,7 @@ class Product(models.Model):
         null=True,
         blank=True,
         related_name='products',
+        verbose_name="Коллекция",
         help_text="Коллекция (опционально)"
     )
     type = models.ForeignKey(
@@ -381,6 +386,7 @@ class Product(models.Model):
         null=True,
         blank=True,
         related_name='products',
+        verbose_name="Тип",
         help_text="Тип/Вид (опционально)"
     )
 
@@ -414,8 +420,8 @@ class Product(models.Model):
         help_text="DEPRECATED: Используйте поле 'color' и 'color_group' вместо этого"
     )
 
-    is_new = models.BooleanField(default=False, db_index=True)
-    is_on_sale = models.BooleanField(default=False, db_index=True)
+    is_new = models.BooleanField(default=False, db_index=True, verbose_name="Новинка")
+    is_on_sale = models.BooleanField(default=False, db_index=True, verbose_name="Акция")
     is_featured = models.BooleanField(
         default=False,
         db_index=True,
@@ -439,13 +445,13 @@ class Product(models.Model):
         help_text="Структурированные характеристики товара в формате [{\"key\": \"Ширина\", \"value\": \"60 см\"}, ...]"
     )
 
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
     class Meta:
         db_table = 'products'
-        verbose_name = 'Product'
-        verbose_name_plural = 'Products'
+        verbose_name = 'Товар'
+        verbose_name_plural = 'Товары'
         ordering = ['-created_at']
         unique_together = ('section', 'brand', 'slug')
         indexes = [
@@ -825,7 +831,8 @@ class Material(models.Model):
         max_length=500,
         verbose_name="Ссылка на картинку",
         help_text="URL картинки для отображения материала",
-        default='https://via.placeholder.com/400x300?text=Material+Image'
+        blank=True,
+        default=''
     )
     order = models.IntegerField(
         default=0,

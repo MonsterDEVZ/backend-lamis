@@ -9,18 +9,62 @@ from django import forms
 from apps.products.models import (
     Section, Brand, Category, Collection, Type, Product, Color, ProductImage,
     TutorialCategory, TutorialVideo,
-    MaterialCategory, Material
+    Material
 )
 from apps.products.widgets import CharacteristicsWidget
 
 
+class CustomPaginationMixin:
+    """
+    Fixes a pagination issue with django-jazzmin on the first page.
+
+    Instead of monkey-patching the request, this mixin redirects to a URL
+    with the page number parameter ('p=0') if it's missing. This ensures
+    that the changelist view always receives a consistent URL for pagination.
+    """
+    def changelist_view(self, request, extra_context=None):
+        from django.http import HttpResponseRedirect
+
+        # If 'p' (page number) is not in the query parameters, redirect.
+        # Skip redirect if 'e' is present (error page) to avoid redirect loops.
+        if 'p' not in request.GET and 'e' not in request.GET:
+            params = request.GET.copy()
+            params['p'] = '0'
+            # Preserve all other query parameters.
+            return HttpResponseRedirect(request.path + '?' + params.urlencode())
+
+        # If 'p' is present or 'e' is present (error page), proceed with the normal flow.
+        return super().changelist_view(request, extra_context=extra_context)
+
+
+class DynamicListPerPageMixin:
+    """
+    Mixin that allows changing list_per_page via URL parameter.
+    Supports: 10, 20, 50, 100 items per page.
+    """
+    def get_list_per_page(self, request):
+        """
+        Override Django's get_list_per_page to read from URL parameter.
+        This is the correct way to set per-request pagination.
+        """
+        list_per_page_param = request.GET.get('list_per_page')
+        if list_per_page_param and list_per_page_param.isdigit():
+            list_per_page = int(list_per_page_param)
+            if list_per_page in [10, 20, 50, 100]:
+                return list_per_page
+
+        # Return the class-level default
+        return self.list_per_page
+
+
 @admin.register(Section)
-class SectionAdmin(admin.ModelAdmin):
+class SectionAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     list_display = ['id', 'name', 'slug', 'created_at']
     search_fields = ['name', 'description', 'title']
     list_filter = ['created_at']
     readonly_fields = ['slug', 'created_at']
     ordering = ['name']
+    list_per_page = 20
 
     fieldsets = (
         ('Основная информация', {
@@ -39,12 +83,13 @@ class SectionAdmin(admin.ModelAdmin):
 
 
 @admin.register(Brand)
-class BrandAdmin(admin.ModelAdmin):
+class BrandAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     list_display = ['id', 'name', 'slug', 'created_at']
     search_fields = ['name', 'description']
     list_filter = ['created_at']
     readonly_fields = ['slug', 'created_at']
     ordering = ['name']
+    list_per_page = 20
     fieldsets = (
         ('Основная информация', {
             'fields': ('name', 'slug', 'description')
@@ -61,12 +106,13 @@ class BrandAdmin(admin.ModelAdmin):
 
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     list_display = ['id', 'name', 'section', 'brand', 'slug', 'created_at']
     search_fields = ['name', 'description', 'section__name', 'brand__name']
     list_filter = ['section', 'brand', 'created_at']
     readonly_fields = ['slug', 'created_at']
     ordering = ['section', 'brand', 'name']
+    list_per_page = 20
     fieldsets = (
         ('Основная информация', {
             'fields': ('name', 'slug', 'description')
@@ -93,12 +139,13 @@ class ProductInline(admin.TabularInline):
 
 
 @admin.register(Collection)
-class CollectionAdmin(admin.ModelAdmin):
+class CollectionAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     list_display = ['id', 'name', 'brand', 'category', 'product_count', 'created_at']
     list_filter = ['brand', 'category', 'created_at']
     search_fields = ['name', 'description', 'brand__name', 'category__name']
     readonly_fields = ['slug', 'created_at', 'product_count']
     ordering = ['brand', 'category', 'name']
+    list_per_page = 20
     inlines = [ProductInline]
 
     fieldsets = (
@@ -149,13 +196,13 @@ class CollectionAdmin(admin.ModelAdmin):
 
 
 @admin.register(Type)
-class TypeAdmin(admin.ModelAdmin):
+class TypeAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     list_display = ['id', 'name', 'category', 'product_count', 'slug_display', 'created_at']
     list_filter = ['category', 'created_at']
     search_fields = ['name', 'description', 'category__name', 'slug']
     readonly_fields = ['slug', 'created_at', 'product_count']
     ordering = ['category', 'name']
-    list_per_page = 50
+    list_per_page = 20
     inlines = [ProductInline]
 
     fieldsets = (
@@ -244,7 +291,7 @@ class TypeAdmin(admin.ModelAdmin):
 
 
 @admin.register(Color)
-class ColorAdmin(admin.ModelAdmin):
+class ColorAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     """
     Admin interface for Color catalog (Справочник цветов)
 
@@ -259,7 +306,7 @@ class ColorAdmin(admin.ModelAdmin):
     search_fields = ['name', 'slug', 'hex_code']
     readonly_fields = ['slug', 'created_at', 'color_preview_large', 'product_count']
     ordering = ['name']
-    list_per_page = 50
+    list_per_page = 20
 
     fieldsets = (
         ('Основная информация', {
@@ -354,11 +401,6 @@ class ColorAdmin(admin.ModelAdmin):
         self.message_user(request, f'Создано копий цветов: {duplicated_count}')
     duplicate_colors.short_description = "Дублировать выбранные цвета"
 
-    class Media:
-        css = {
-            'all': ('admin/css/custom_admin.css',)
-        }
-
 
 class ProductImageInline(admin.TabularInline):
     """
@@ -371,6 +413,8 @@ class ProductImageInline(admin.TabularInline):
     fields = ['image_preview', 'image_url', 'image_type', 'sort_order', 'alt_text']
     readonly_fields = ['image_preview']
     ordering = ['sort_order', 'id']
+    verbose_name = 'Изображение товара'
+    verbose_name_plural = 'Изображения товара'
 
     def image_preview(self, obj):
         """Превью изображения"""
@@ -397,7 +441,7 @@ class ProductAdminForm(forms.ModelForm):
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     """
     Admin interface for Products with color variations support
     """
@@ -414,9 +458,9 @@ class ProductAdmin(admin.ModelAdmin):
     ]
     search_fields = ['name', 'description', 'slug', 'brand__name', 'color_group']
     readonly_fields = ['slug', 'created_at', 'updated_at', 'variation_count', 'variations_list', 'image_count']
-    list_editable = ['price', 'is_new', 'is_on_sale']
+    list_editable = ['is_new', 'is_on_sale']
     ordering = ['-created_at']
-    list_per_page = 50
+    list_per_page = 20
     autocomplete_fields = ['color']
     inlines = [ProductImageInline]
 
@@ -438,11 +482,6 @@ class ProductAdmin(admin.ModelAdmin):
         ('Флаги', {
             'fields': ('is_new', 'is_on_sale'),
             'description': 'Флаги для отображения на сайте'
-        }),
-        ('Старые поля изображений (deprecated)', {
-            'fields': ('main_image_url', 'hover_image_url', 'images'),
-            'classes': ('collapse',),
-            'description': 'УСТАРЕЛО: Используйте галерею изображений выше. Эти поля сохранены для обратной совместимости.'
         }),
         ('Даты', {
             'fields': ('created_at', 'updated_at'),
@@ -581,6 +620,8 @@ class ProductAdmin(admin.ModelAdmin):
 
         super().save_model(request, obj, form, change)
 
+    # Note: variation actions are also shown as separate buttons in the template
+    # (templates/admin/products/product/change_list.html)
     actions = ['set_same_color_group', 'clear_color_group']
 
     def set_same_color_group(self, request, queryset):
@@ -616,19 +657,15 @@ class TutorialVideoInline(admin.TabularInline):
     fields = ['title', 'youtube_video_id', 'order']
     ordering = ['order']
 
-    class Media:
-        css = {
-            'all': ('admin/css/custom_admin.css',)
-        }
-
 
 @admin.register(TutorialCategory)
-class TutorialCategoryAdmin(admin.ModelAdmin):
+class TutorialCategoryAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     list_display = ['title', 'slug', 'order', 'is_active', 'created_at']
     list_filter = ['is_active', 'created_at']
     search_fields = ['title', 'slug']
     prepopulated_fields = {'slug': ('title',)}
     ordering = ['order', '-created_at']
+    list_per_page = 20
 
     fieldsets = (
         ('Основная информация', {
@@ -643,18 +680,14 @@ class TutorialCategoryAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
     inlines = [TutorialVideoInline]
 
-    class Media:
-        css = {
-            'all': ('admin/css/custom_admin.css',)
-        }
-
 
 @admin.register(TutorialVideo)
-class TutorialVideoAdmin(admin.ModelAdmin):
+class TutorialVideoAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     list_display = ['title', 'category', 'youtube_video_id', 'order', 'created_at']
     list_filter = ['category', 'created_at']
     search_fields = ['title', 'youtube_video_id']
     ordering = ['category', 'order', '-created_at']
+    list_per_page = 20
 
     fieldsets = (
         ('Основная информация', {
@@ -668,66 +701,13 @@ class TutorialVideoAdmin(admin.ModelAdmin):
 
     readonly_fields = ['created_at']
 
-    class Media:
-        css = {
-            'all': ('admin/css/custom_admin.css',)
-        }
-
 
 # ========================
 # Materials Admin Classes
 # ========================
 
-@admin.register(MaterialCategory)
-class MaterialCategoryAdmin(admin.ModelAdmin):
-    """Admin interface for Material Categories"""
-
-    list_display = ['name', 'order', 'material_count_display', 'slug', 'created_at']
-    list_filter = ['created_at']
-    search_fields = ['name', 'slug', 'description']
-    ordering = ['order', 'name']
-    readonly_fields = ['slug', 'created_at', 'material_count_display']
-    list_per_page = 50
-
-    fieldsets = (
-        ('Основная информация', {
-            'fields': ('name', 'slug', 'description', 'order')
-        }),
-        ('Статистика', {
-            'fields': ('material_count_display', 'created_at'),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def material_count_display(self, obj):
-        """Display count of active materials in this category"""
-        count = obj.materials.filter(is_active=True).count()
-        total = obj.materials.count()
-        if count > 0:
-            return format_html(
-                '<a href="/admin/products/material/?category__id__exact={}" style="color: #417690; font-weight: bold;">'
-                '{} активных ({} всего)</a>',
-                obj.id, count, total
-            )
-        return format_html('<span style="color: #999;">0 материалов</span>')
-    material_count_display.short_description = 'Материалы'
-
-    def get_queryset(self, request):
-        """Optimized queryset"""
-        queryset = super().get_queryset(request)
-        queryset = queryset.annotate(
-            _material_count=Count('materials', distinct=True)
-        )
-        return queryset
-
-    class Media:
-        css = {
-            'all': ('admin/css/custom_admin.css',)
-        }
-
-
 @admin.register(Material)
-class MaterialAdmin(admin.ModelAdmin):
+class MaterialAdmin(CustomPaginationMixin, DynamicListPerPageMixin, admin.ModelAdmin):
     """Admin interface for Materials (Downloadable Files)"""
 
     list_display = [
@@ -743,7 +723,7 @@ class MaterialAdmin(admin.ModelAdmin):
     ordering = ['order', '-created_at']
     readonly_fields = ['created_at', 'updated_at']
     list_editable = ['order']
-    list_per_page = 50
+    list_per_page = 20
     date_hierarchy = 'created_at'
 
     fieldsets = (
@@ -805,8 +785,3 @@ class MaterialAdmin(admin.ModelAdmin):
             duplicated_count += 1
         self.message_user(request, f'Создано копий материалов: {duplicated_count}')
     duplicate_materials.short_description = "Дублировать выбранные материалы"
-
-    class Media:
-        css = {
-            'all': ('admin/css/custom_admin.css',)
-        }

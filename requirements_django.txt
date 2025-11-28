@@ -13,3 +13,4 @@ setuptools>=65.0.0
 dj-database-url>=2.1.0
 whitenoise>=6.5.0
 django-ckeditor==6.7.3
+django-jazzmin==3.0.1

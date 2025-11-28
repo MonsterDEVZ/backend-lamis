@@ -45,6 +45,9 @@ if any('railway.app' in host for host in ALLOWED_HOSTS) is False:
 # Application definition
 
 INSTALLED_APPS = [
+    # Jazzmin должен быть ПЕРВЫМ перед django.contrib.admin
+    "jazzmin",
+
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -326,3 +329,213 @@ if USE_FILE_LOGGING:
     }
     LOGGING['loggers']['django']['handlers'].append('file')
     LOGGING['loggers']['apps']['handlers'].append('file')
+
+
+# ============================================================
+# Django Jazzmin Configuration
+# ============================================================
+# Современная тема для Django Admin с Bootstrap 4
+# Документация: https://django-jazzmin.readthedocs.io/
+
+JAZZMIN_SETTINGS = {
+    # Заголовок окна браузера
+    "site_title": "LAMIS Admin",
+
+    # Заголовок на странице входа
+    "site_header": "LAMIS",
+
+    # Заголовок бренда в сайдбаре
+    "site_brand": "LAMIS",
+
+    # Логотип (путь к статике)
+    # "site_logo": "images/logo.png",
+
+    # Логотип для страницы логина (будет уменьшен до 32x32)
+    # "login_logo": "images/logo.png",
+
+    # CSS-классы для логотипа
+    "site_logo_classes": "img-circle",
+
+    # Иконка сайта (favicon)
+    # "site_icon": "images/favicon.ico",
+
+    # Приветственный текст на странице входа
+    "welcome_sign": "Добро пожаловать в панель администратора LAMIS",
+
+    # Copyright в футере
+    "copyright": "LAMIS E-commerce",
+
+    # Поле пользователя для отображения рядом с аватаром
+    "user_avatar": None,
+
+    ############
+    # Top Menu #
+    ############
+    # Ссылки в верхнем меню
+    "topmenu_links": [
+        # URL к главной странице сайта
+        {"name": "Сайт", "url": "/", "new_window": True},
+
+        # Внешняя ссылка
+        # {"name": "Support", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
+
+        # Модель для отображения поиска
+        {"model": "authentication.User"},
+    ],
+
+    #############
+    # User Menu #
+    #############
+    # Дополнительные ссылки в меню пользователя
+    "usermenu_links": [
+        {"model": "authentication.User"},
+    ],
+
+    #############
+    # Side Menu #
+    #############
+    # Показывать сайдбар
+    "show_sidebar": True,
+
+    # Автоматически разворачивать меню
+    "navigation_expanded": True,
+
+    # Скрывать эти приложения
+    "hide_apps": [],
+
+    # Скрывать эти модели
+    "hide_models": ["products.MaterialCategory"],
+
+    # Порядок приложений и моделей в сайдбаре
+    "order_with_respect_to": [
+        "products",
+        "products.Section",
+        "products.Brand",
+        "products.Category",
+        "products.Collection",
+        "products.Type",
+        "products.Product",
+        "products.Color",
+        "products.TutorialCategory",
+        "products.TutorialVideo",
+        "products.Material",
+        "authentication",
+        "authentication.User",
+    ],
+
+    # Иконки для приложений/моделей (Font Awesome 5)
+    "icons": {
+        "authentication": "fas fa-users-cog",
+        "authentication.User": "fas fa-user",
+
+        "products": "fas fa-shopping-cart",
+        "products.Section": "fas fa-layer-group",
+        "products.Brand": "fas fa-trademark",
+        "products.Category": "fas fa-tags",
+        "products.Collection": "fas fa-th-large",
+        "products.Type": "fas fa-cubes",
+        "products.Product": "fas fa-box",
+        "products.Color": "fas fa-palette",
+        "products.ProductImage": "fas fa-images",
+        "products.TutorialCategory": "fas fa-graduation-cap",
+        "products.TutorialVideo": "fas fa-video",
+        "products.Material": "fas fa-file-download",
+
+        "auth": "fas fa-users-cog",
+        "auth.Group": "fas fa-users",
+    },
+
+    # Иконка по умолчанию
+    "default_icon_parents": "fas fa-folder",
+    "default_icon_children": "fas fa-circle",
+
+    #################
+    # Related Modal #
+    #################
+    # Использовать модальные окна вместо popup для связанных объектов
+    "related_modal_active": False,
+
+    #############
+    # UI Tweaks #
+    #############
+    # Относительные даты (напр. "3 часа назад")
+    "use_google_fonts_cdn": True,
+
+    # Показать кнопку переключения UI настроек
+    "show_ui_builder": False,
+
+    ###############
+    # Change view #
+    ###############
+    # Показывать атрибуты в табах
+    "changeform_format": "horizontal_tabs",
+
+    # Переопределить changeform_format для конкретных моделей
+    "changeform_format_overrides": {
+        "authentication.User": "collapsible",
+        "products.Product": "horizontal_tabs",
+    },
+
+    # Язык для интерфейса
+    "language_chooser": False,
+}
+
+# Настройки UI темы Jazzmin
+JAZZMIN_UI_TWEAKS = {
+    # Тема navbar (см. https://adminlte.io/docs/3.0/layout.html)
+    "navbar": "navbar-white navbar-light",
+
+    # Нет фиксированного navbar
+    "navbar_fixed": False,
+
+    # Классы для футера
+    "footer_fixed": False,
+
+    # Тема сайдбара
+    "sidebar": "sidebar-light-success",
+
+    # Фиксированный сайдбар
+    "sidebar_fixed": True,
+
+    # Сайдбар свернут по умолчанию
+    "sidebar_nav_compact_style": False,
+
+    # Мини-сайдбар по умолчанию
+    "sidebar_disable_expand": False,
+
+    # Наводить на элементы сайдбара
+    "sidebar_nav_legacy_style": False,
+
+    # Детский отступ в сайдбаре
+    "sidebar_nav_child_indent": True,
+
+    # Плоский стиль
+    "sidebar_nav_flat_style": False,
+
+    # Тема (доступные: cerulean, cosmo, cyborg, darkly, flatly, journal, litera, lumen, lux, materia, minty, pulse, sandstone, simplex, sketchy, slate, solar, spacelab, superhero, united, yeti)
+    "theme": "flatly",
+
+    # Темная тема для сайдбара (доступные: cyborg, darkly, slate, solar, superhero)
+    "dark_mode_theme": None,
+
+    # Кастомные CSS и JS
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
+    },
+
+    # Акцентный цвет (primary, secondary, info, warning, danger, success)
+    "accent": "accent-success",
+
+    # Цвет текста navbar (primary, secondary, info, warning, danger, success, gray-dark, gray, white, light, dark)
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-success",
+    "no_navbar_border": False,
+}

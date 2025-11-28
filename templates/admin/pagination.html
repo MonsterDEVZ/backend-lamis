@@ -1,0 +1,300 @@
+{% load admin_list jazzmin i18n %}
+
+<style>
+/* Carbon/Material Design Pagination */
+.pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 24px;
+    padding: 12px 16px;
+    background: #ffffff;
+    border-top: 1px solid #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    color: #525252;
+    margin-top: 0;
+}
+
+/* Rows per page section */
+.pagination-bar .rows-per-page {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination-bar .rows-per-page label {
+    color: #525252;
+    font-weight: 400;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.pagination-bar .rows-per-page select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #8d8d8d;
+    padding: 4px 24px 4px 8px;
+    font-size: 13px;
+    color: #161616;
+    cursor: pointer;
+    min-width: 56px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23161616' d='M6 8.5L1.5 4h9z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    border-radius: 0;
+}
+
+.pagination-bar .rows-per-page select:hover {
+    border-bottom-color: #161616;
+}
+
+.pagination-bar .rows-per-page select:focus {
+    outline: none;
+    border-bottom: 2px solid #0f62fe;
+    padding-bottom: 3px;
+}
+
+/* Data range summary */
+.pagination-bar .data-range {
+    color: #525252;
+    white-space: nowrap;
+}
+
+/* Navigation section */
+.pagination-bar .page-nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* Ghost buttons for prev/next */
+.pagination-bar .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #525252;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    text-decoration: none;
+    border-radius: 0;
+}
+
+.pagination-bar .nav-btn:hover:not(.disabled) {
+    background-color: #e8e8e8;
+    color: #161616;
+}
+
+.pagination-bar .nav-btn:active:not(.disabled) {
+    background-color: #c6c6c6;
+}
+
+.pagination-bar .nav-btn.disabled {
+    color: #c6c6c6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pagination-bar .nav-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* Page input group */
+.pagination-bar .page-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 8px;
+}
+
+.pagination-bar .page-input {
+    width: 48px;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid #8d8d8d;
+    background: #fff;
+    font-size: 13px;
+    color: #161616;
+    text-align: center;
+    border-radius: 0;
+    -moz-appearance: textfield;
+}
+
+.pagination-bar .page-input::-webkit-outer-spin-button,
+.pagination-bar .page-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.pagination-bar .page-input:hover {
+    border-color: #161616;
+}
+
+.pagination-bar .page-input:focus {
+    outline: none;
+    border: 2px solid #0f62fe;
+    padding: 0 7px;
+}
+
+.pagination-bar .page-total {
+    color: #525252;
+    white-space: nowrap;
+}
+
+/* Divider between sections */
+.pagination-bar .divider {
+    width: 1px;
+    height: 24px;
+    background: #e0e0e0;
+    margin: 0 8px;
+}
+</style>
+
+<div class="col-12">
+    <div class="pagination-bar">
+        <!-- Rows per page selector -->
+        <div class="rows-per-page">
+            <label for="rows-per-page">Строк на странице:</label>
+            <select id="rows-per-page" onchange="changeRowsPerPage(this.value)">
+                <option value="10" {% if cl.list_per_page == 10 %}selected{% endif %}>10</option>
+                <option value="20" {% if cl.list_per_page == 20 %}selected{% endif %}>20</option>
+                <option value="50" {% if cl.list_per_page == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if cl.list_per_page == 100 %}selected{% endif %}>100</option>
+            </select>
+        </div>
+
+        <span class="divider"></span>
+
+        <!-- Data range summary: "1–20 of 56" -->
+        <div class="data-range" id="data-range-display">
+            {% if cl.result_count %}
+                <span id="range-start"></span>–<span id="range-end"></span> из {{ cl.result_count }}
+            {% else %}
+                0 записей
+            {% endif %}
+        </div>
+
+        {% if pagination_required %}
+        <span class="divider"></span>
+
+        <!-- Navigation controls -->
+        <div class="page-nav">
+            <!-- Previous button -->
+            {% if cl.page_num > 0 %}
+                <a href="javascript:void(0)" onclick="goToPrevPage()" class="nav-btn" title="Предыдущая страница">
+                    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10.354 3.646a.5.5 0 010 .708L6.707 8l3.647 3.646a.5.5 0 01-.708.708l-4-4a.5.5 0 010-.708l4-4a.5.5 0 01.708 0z"/>
+                    </svg>
+                </a>
+            {% else %}
+                <span class="nav-btn disabled" title="Предыдущая страница">
+                    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10.354 3.646a.5.5 0 010 .708L6.707 8l3.647 3.646a.5.5 0 01-.708.708l-4-4a.5.5 0 010-.708l4-4a.5.5 0 01.708 0z"/>
+                    </svg>
+                </span>
+            {% endif %}
+
+            <!-- Page input -->
+            <div class="page-input-group">
+                <input type="number"
+                       class="page-input"
+                       id="page-input"
+                       value="{{ cl.page_num|add:1 }}"
+                       min="1"
+                       max="{{ cl.paginator.num_pages }}"
+                       onkeydown="if(event.key==='Enter'){goToPage();event.preventDefault();}">
+                <span class="page-total">из {{ cl.paginator.num_pages }}</span>
+            </div>
+
+            <!-- Next button -->
+            {% if cl.page_num < cl.paginator.num_pages|add:"-1" %}
+                <a href="javascript:void(0)" onclick="goToNextPage()" class="nav-btn" title="Следующая страница">
+                    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5.646 3.646a.5.5 0 01.708 0l4 4a.5.5 0 010 .708l-4 4a.5.5 0 01-.708-.708L9.293 8 5.646 4.354a.5.5 0 010-.708z"/>
+                    </svg>
+                </a>
+            {% else %}
+                <span class="nav-btn disabled" title="Следующая страница">
+                    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5.646 3.646a.5.5 0 01.708 0l4 4a.5.5 0 010 .708l-4 4a.5.5 0 01-.708-.708L9.293 8 5.646 4.354a.5.5 0 010-.708z"/>
+                    </svg>
+                </span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+(function() {
+    // Calculate and display data range
+    var pageNum = {{ cl.page_num|default:0 }};
+    var perPage = {{ cl.list_per_page|default:20 }};
+    var totalCount = {{ cl.result_count|default:0 }};
+    var resultListLength = {{ cl.result_list|length|default:0 }};
+
+    var startItem = pageNum * perPage + 1;
+    var endItem = pageNum * perPage + resultListLength;
+
+    if (totalCount > 0) {
+        var rangeStart = document.getElementById('range-start');
+        var rangeEnd = document.getElementById('range-end');
+        if (rangeStart) rangeStart.textContent = startItem;
+        if (rangeEnd) rangeEnd.textContent = endItem;
+    }
+})();
+
+function changeRowsPerPage(value) {
+    var url = new URL(window.location.href);
+    url.searchParams.set('list_per_page', value);
+    url.searchParams.delete('p');
+    window.location.href = url.toString();
+}
+
+function navigateToPage(pageNum) {
+    var url = new URL(window.location.href);
+    if (pageNum <= 0) {
+        // For first page, remove 'p' parameter entirely
+        url.searchParams.delete('p');
+    } else {
+        url.searchParams.set('p', pageNum);
+    }
+    window.location.href = url.toString();
+}
+
+function goToPage() {
+    var input = document.getElementById('page-input');
+    var pageNum = parseInt(input.value) - 1; // Convert to 0-based
+    var maxPage = parseInt('{{ cl.paginator.num_pages|default:1 }}') - 1;
+
+    if (isNaN(pageNum) || pageNum < 0) pageNum = 0;
+    if (pageNum > maxPage) pageNum = maxPage;
+
+    navigateToPage(pageNum);
+}
+
+function goToPrevPage() {
+    var currentPage = {{ cl.page_num|default:0 }};
+    if (currentPage > 0) {
+        navigateToPage(currentPage - 1);
+    }
+}
+
+function goToNextPage() {
+    var currentPage = {{ cl.page_num|default:0 }};
+    var maxPage = parseInt('{{ cl.paginator.num_pages|default:1 }}') - 1;
+    if (currentPage < maxPage) {
+        navigateToPage(currentPage + 1);
+    }
+}
+</script>
