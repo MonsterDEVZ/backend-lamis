@@ -14,6 +14,7 @@ urlpatterns = [
 
     # API v1 - Public endpoints
     path('api/v1/', include('apps.products.urls')),
+     path('api/v1/', include('apps.partners.urls')),
     path('api/v1/auth/', include('apps.authentication.urls')),
 
     # API v1 - Admin endpoints
