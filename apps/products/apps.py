@@ -4,7 +4,7 @@ from django.apps import AppConfig
 class ProductsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.products'
-    verbose_name = 'Products'
+    verbose_name = 'Продукты'
 
     def ready(self):
         # Monkey-patch для исправления бага в django-jazzmin

@@ -40,19 +40,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     """
     Custom User Model
-
-    Fields:
-        id: Primary Key
-        username: Unique username
-        email: Unique email address
-        is_admin: Boolean flag for admin users
-        is_staff: Boolean flag for staff users (Django admin access)
-        is_active: Boolean flag for active users
-        is_superuser: Boolean flag for superuser (from PermissionsMixin)
-        created_at: Timestamp when user was created
-        updated_at: Timestamp when user was last updated
     """
-
     username = models.CharField(max_length=150, unique=True, db_index=True)
     email = models.EmailField(max_length=255, unique=True, db_index=True)
     is_admin = models.BooleanField(default=False)
@@ -68,8 +56,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = 'users'
-        verbose_name = 'User'
-        verbose_name_plural = 'Users'
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
         ordering = ['-created_at']
 
     def __str__(self):
@@ -77,5 +65,4 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_authenticated_admin(self):
-        """Check if user is authenticated admin"""
         return self.is_active and self.is_admin

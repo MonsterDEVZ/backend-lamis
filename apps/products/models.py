@@ -12,18 +12,6 @@ from ckeditor.fields import RichTextField  # WYSIWYG редактор для а�
 
 
 class Section(models.Model):
-    """
-    Section Model (Мебель для ванной, Санфарфор, Смесители, etc.)
-
-    Fields:
-        id: Primary Key
-        name: Section name (unique)
-        slug: URL-friendly slug (auto-generated from name)
-        title: SEO title for section description
-        description: Optional section description
-        created_at: Timestamp when section was created
-    """
-
     name = models.CharField(max_length=100, unique=True, db_index=True)
     slug = models.SlugField(max_length=120, unique=True, blank=True)
     title = models.CharField(max_length=255, blank=True, null=True, help_text="SEO заголовок для описания раздела")
@@ -32,8 +20,8 @@ class Section(models.Model):
 
     class Meta:
         db_table = 'sections'
-        verbose_name = 'Section'
-        verbose_name_plural = 'Sections'
+        verbose_name = 'Раздел'
+        verbose_name_plural = 'Разделы'
         ordering = ['name']
 
     def save(self, *args, **kwargs):
@@ -46,21 +34,6 @@ class Section(models.Model):
 
 
 class Brand(models.Model):
-    """
-    Brand Model (Производитель - Lamis, Caizer, Blesk, etc.)
-
-    КЛЮЧЕВОЙ УРОВЕНЬ после Section:
-    Section → Brand → Category → Collection/Type → Product
-
-    Fields:
-        id: Primary Key
-        name: Brand name (unique)
-        slug: URL-friendly slug (auto-generated from name)
-        description: Optional brand description
-        image: Optional brand logo/image URL
-        created_at: Timestamp when brand was created
-    """
-
     name = models.CharField(max_length=100, unique=True, db_index=True)
     slug = models.SlugField(max_length=120, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
@@ -69,8 +42,8 @@ class Brand(models.Model):
 
     class Meta:
         db_table = 'brands'
-        verbose_name = 'Brand'
-        verbose_name_plural = 'Brands'
+        verbose_name = 'Бренд'
+        verbose_name_plural = 'Бренды'
         ordering = ['name']
 
     def save(self, *args, **kwargs):
@@ -83,26 +56,8 @@ class Brand(models.Model):
 
 
 class Category(models.Model):
-    """
-    Category Model (Мебель, Зеркала, Сантехника, Водонагреватели)
-
-    НОВАЯ АРХИТЕКТУРА: Category зависит от Section + Brand
-    Section → Brand → Category
-
-    Fields:
-        id: Primary Key
-        name: Category name
-        slug: URL-friendly slug (auto-generated from name)
-        section: Foreign Key to Section (обязательно)
-        brand: Foreign Key to Brand (обязательно)
-        description: Optional category description
-        created_at: Timestamp when category was created
-    """
-
     name = models.CharField(max_length=150, db_index=True)
     slug = models.SlugField(max_length=180, blank=True)
-
-    # НОВЫЕ связи: Section + Brand
     section = models.ForeignKey(
         Section,
         on_delete=models.CASCADE,
@@ -115,14 +70,13 @@ class Category(models.Model):
         related_name='categories',
         help_text="Производитель (Lamis, Caizer, Blesk, etc.)"
     )
-
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'categories'
-        verbose_name = 'Category'
-        verbose_name_plural = 'Categories'
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
         ordering = ['section', 'brand', 'name']
         unique_together = ('section', 'brand', 'slug')
 
@@ -132,32 +86,12 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        # Показываем контекст в админке!
         return f"{self.name} ({self.section.name}, {self.brand.name})"
 
 
 class Collection(models.Model):
-    """
-    Collection Model (Solo, Harmony, Lux, Premium, Eco, etc.)
-
-    НОВАЯ АРХИТЕКТУРА: Collection зависит от Brand + Category
-    Section → Brand → Category → Collection
-
-    Fields:
-        id: Primary Key
-        name: Collection name
-        slug: URL-friendly slug (auto-generated from name)
-        brand: Foreign Key to Brand (обязательно)
-        category: Foreign Key to Category (обязательно)
-        image: URL of collection image (from R2 storage)
-        description: Optional collection description
-        created_at: Timestamp when collection was created
-    """
-
     name = models.CharField(max_length=150, db_index=True)
     slug = models.SlugField(max_length=180, blank=True)
-
-    # НОВЫЕ связи: Brand + Category (section знаем через Category)
     brand = models.ForeignKey(
         Brand,
         on_delete=models.CASCADE,
@@ -170,7 +104,6 @@ class Collection(models.Model):
         related_name='collections',
         help_text="Категория товаров"
     )
-
     image = models.URLField(
         max_length=500,
         null=True,
@@ -182,8 +115,8 @@ class Collection(models.Model):
 
     class Meta:
         db_table = 'collections'
-        verbose_name = 'Collection'
-        verbose_name_plural = 'Collections'
+        verbose_name = 'Коллекция'
+        verbose_name_plural = 'Коллекции'
         ordering = ['brand', 'category', 'name']
         unique_together = ('brand', 'category', 'slug')
 
@@ -193,47 +126,25 @@ class Collection(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        # Показываем контекст!
         return f"{self.name} ({self.category.name}, {self.brand.name})"
 
 
 class Type(models.Model):
-    """
-    Type Model (Вид) - Product type classification
-
-    НОВАЯ АРХИТЕКТУРА: Type зависит ТОЛЬКО от Category
-    Section → Brand → Category → Type
-    (section и brand знаем через Category)
-
-    Examples: Раковины, Унитазы, Писсуары, Биде
-
-    Fields:
-        id: Primary Key
-        name: Type name (Вид)
-        slug: URL-friendly slug (auto-generated from name)
-        category: Foreign Key to Category (обязательно)
-        description: Optional type description
-        created_at: Timestamp when type was created
-    """
-
     name = models.CharField(max_length=150, db_index=True)
     slug = models.SlugField(max_length=180, blank=True)
-
-    # ТОЛЬКО Category (section и brand знаем через category)
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
         related_name='types',
         help_text="Категория товаров"
     )
-
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'types'
-        verbose_name = 'Type'
-        verbose_name_plural = 'Types'
+        verbose_name = 'Тип'
+        verbose_name_plural = 'Типы'
         ordering = ['category', 'name']
         unique_together = ('category', 'slug')
 
@@ -247,22 +158,6 @@ class Type(models.Model):
 
 
 class Color(models.Model):
-    """
-    Color Model - Централизованный справочник цветов
-
-    Используется для:
-    - Унификации цветов во всех продуктах
-    - Возможности выбора цвета из справочника при создании продукта
-    - Поддержки как простых цветов (HEX), так и текстур (изображения)
-
-    Fields:
-        name: Название цвета (уникальное)
-        slug: URL-friendly slug (auto-generated)
-        hex_code: HEX код цвета (для простых цветов)
-        texture_image: URL изображения текстуры (для текстурных цветов)
-        created_at: Timestamp
-    """
-
     name = models.CharField(
         max_length=100,
         unique=True,
@@ -289,8 +184,8 @@ class Color(models.Model):
 
     class Meta:
         db_table = 'colors'
-        verbose_name = 'Color'
-        verbose_name_plural = 'Colors'
+        verbose_name = 'Цвет'
+        verbose_name_plural = 'Цвета'
         ordering = ['name']
 
     def save(self, *args, **kwargs):
@@ -305,39 +200,10 @@ class Color(models.Model):
 
     @property
     def is_texture(self):
-        """Проверяет, является ли цвет текстурой"""
         return bool(self.texture_image)
 
 
 class Product(models.Model):
-    """
-    Product Model
-
-    НОВАЯ АРХИТЕКТУРА: Product ОБЯЗАТЕЛЬНО имеет brand
-    Section → Brand → Category → Collection/Type → Product
-
-    Fields:
-        id: Primary Key
-        name: Product name
-        slug: URL-friendly slug (unique, auto-generated from name)
-        price: Product price (Decimal for precise currency handling)
-        section: Foreign Key to Section (обязательно)
-        brand: Foreign Key to Brand (обязательно) ← НОВОЕ!
-        category: Foreign Key to Category (обязательно)
-        collection: Foreign Key to Collection (optional)
-        type: Foreign Key to Type (optional)
-        main_image_url: Main product image URL (shown by default)
-        hover_image_url: Hover/render image URL (shown on hover)
-        images: JSON array of additional image URLs
-        colors: JSON array of color options [{name, hex}, ...]
-        is_new: Flag for "Новинка" badge
-        is_on_sale: Flag for "Акция" badge
-        is_featured: Flag for showing product on homepage (CAIZER section)
-        description: Product description
-        created_at: Timestamp when product was created
-        updated_at: Timestamp when product was last updated
-    """
-
     name = models.CharField(max_length=255, db_index=True, verbose_name="Название")
     slug = models.SlugField(max_length=300, unique=True, blank=True, verbose_name="URL")
     price = models.DecimalField(
@@ -346,8 +212,6 @@ class Product(models.Model):
         validators=[MinValueValidator(Decimal('0.00'))],
         verbose_name="Цена"
     )
-
-    # Основные связи
     section = models.ForeignKey(
         Section,
         on_delete=models.CASCADE,
@@ -369,8 +233,6 @@ class Product(models.Model):
         verbose_name="Категория",
         help_text="Категория товаров"
     )
-
-    # Опциональные связи
     collection = models.ForeignKey(
         Collection,
         on_delete=models.SET_NULL,
@@ -389,12 +251,9 @@ class Product(models.Model):
         verbose_name="Тип",
         help_text="Тип/Вид (опционально)"
     )
-
     main_image_url = models.URLField(max_length=500)
     hover_image_url = models.URLField(max_length=500, blank=True, null=True)
     images = models.JSONField(default=list, blank=True)
-
-    # Новая система цветов
     color = models.ForeignKey(
         Color,
         on_delete=models.SET_NULL,
@@ -411,15 +270,12 @@ class Product(models.Model):
         verbose_name="Группа цветовых вариаций",
         help_text="UUID для связывания продуктов-вариаций одной модели. Продукты с одинаковым color_group являются цветовыми вариациями друг друга."
     )
-
-    # Старое поле colors оставляем для обратной совместимости (deprecated)
     colors = models.JSONField(
         default=list,
         blank=True,
         verbose_name="Цвета (устаревшее)",
         help_text="DEPRECATED: Используйте поле 'color' и 'color_group' вместо этого"
     )
-
     is_new = models.BooleanField(default=False, db_index=True, verbose_name="Новинка")
     is_on_sale = models.BooleanField(default=False, db_index=True, verbose_name="Акция")
     is_featured = models.BooleanField(
@@ -428,23 +284,18 @@ class Product(models.Model):
         verbose_name="Показать на главной",
         help_text="Отметьте, чтобы товар отображался в блоке 'Сантехника CAIZER' на главной странице"
     )
-
-    # Описание с поддержкой HTML форматирования (WYSIWYG редактор)
     description = RichTextField(
         blank=True,
         null=True,
         verbose_name="Описание товара",
         help_text="Полное описание товара с возможностью форматирования (жирный, курсив, списки и т.д.)"
     )
-
-    # Структурированные характеристики товара
     characteristics = models.JSONField(
         default=list,
         blank=True,
         verbose_name="Характеристики",
         help_text="Структурированные характеристики товара в формате [{\"key\": \"Ширина\", \"value\": \"60 см\"}, ...]"
     )
-
     created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
@@ -478,16 +329,8 @@ class Product(models.Model):
         return f"{self.name} ({self.brand.name})"
 
     def get_color_variations(self):
-        """
-        Получить все цветовые вариации этого продукта.
-
-        Returns:
-            QuerySet продуктов с тем же color_group (исключая текущий продукт).
-            Пустой QuerySet если color_group не установлен.
-        """
         if not self.color_group:
             return Product.objects.none()
-
         return Product.objects.filter(
             color_group=self.color_group
         ).exclude(
@@ -495,71 +338,33 @@ class Product(models.Model):
         ).select_related('color')
 
     def get_all_variations_including_self(self):
-        """
-        Получить все продукты в группе вариаций, включая текущий.
-
-        Returns:
-            QuerySet всех продуктов с тем же color_group.
-        """
         if not self.color_group:
             return Product.objects.filter(pk=self.pk)
-
         return Product.objects.filter(
             color_group=self.color_group
         ).select_related('color')
 
     @classmethod
     def generate_color_group_id(cls):
-        """
-        Генерирует новый UUID для группы цветовых вариаций.
-
-        Использование:
-            product.color_group = Product.generate_color_group_id()
-        """
         return uuid.uuid4()
 
     def get_main_image(self):
-        """Получить главное изображение из галереи"""
         image = self.gallery_images.filter(image_type='main').first()
         if image:
             return image.image_url
-        # Fallback на старое поле для обратной совместимости
         return self.main_image_url
 
     def get_hover_image(self):
-        """Получить hover изображение из галереи"""
         image = self.gallery_images.filter(image_type='hover').first()
         if image:
             return image.image_url
-        # Fallback на старое поле для обратной совместимости
         return self.hover_image_url
 
     def get_gallery_images(self):
-        """Получить все изображения галереи отсортированные по порядку"""
         return self.gallery_images.all().order_by('sort_order', 'id')
 
 
 class ProductImage(models.Model):
-    """
-    ProductImage Model - Изображения продукта (галерея)
-
-    Централизованное управление всеми изображениями продукта.
-    Заменяет старые поля main_image_url, hover_image_url и images.
-
-    Fields:
-        product: ForeignKey к Product
-        image_url: URL изображения
-        image_type: Тип изображения (main, hover, gallery)
-        sort_order: Порядок сортировки в галерее
-        alt_text: Alt текст для SEO
-        created_at: Timestamp
-
-    Примечание:
-        - У продукта может быть только одно main и одно hover изображение
-        - gallery изображений может быть сколько угодно
-        - Архитектура готова к будущей загрузке файлов (можно добавить FileField)
-    """
-
     class ImageType(models.TextChoices):
         MAIN = 'main', 'Главное изображение'
         HOVER = 'hover', 'Изображение при наведении'
@@ -576,9 +381,6 @@ class ProductImage(models.Model):
         verbose_name="URL изображения",
         help_text="Ссылка на изображение"
     )
-    # Поле для будущей поддержки загрузки файлов
-    # image_file = models.ImageField(upload_to='products/', blank=True, null=True)
-
     image_type = models.CharField(
         max_length=10,
         choices=ImageType.choices,
@@ -602,8 +404,8 @@ class ProductImage(models.Model):
 
     class Meta:
         db_table = 'product_images'
-        verbose_name = 'Product Image'
-        verbose_name_plural = 'Product Images'
+        verbose_name = 'Изображение товара'
+        verbose_name_plural = 'Изображения товаров'
         ordering = ['sort_order', 'id']
         indexes = [
             models.Index(fields=['product', 'image_type']),
@@ -614,20 +416,12 @@ class ProductImage(models.Model):
         return f"{self.product.name} - {self.get_image_type_display()}"
 
     def save(self, *args, **kwargs):
-        """
-        Обеспечивает уникальность main и hover изображений для продукта.
-        Если добавляется новое main/hover, старое становится gallery.
-        """
         if self.image_type in ['main', 'hover']:
-            # Найти существующее изображение этого типа
             existing = ProductImage.objects.filter(
                 product=self.product,
                 image_type=self.image_type
             ).exclude(pk=self.pk)
-
-            # Перевести старое в gallery
             existing.update(image_type='gallery')
-
         super().save(*args, **kwargs)
 
     @property
@@ -640,20 +434,6 @@ class ProductImage(models.Model):
 
 
 class TutorialCategory(models.Model):
-    """
-    Tutorial Category Model (Категория видео уроков)
-
-    Examples: "Установка мебели", "Установка раковины", etc.
-    Each category has a hero banner and multiple tutorial videos.
-
-    Fields:
-        title: Category name (e.g. "Установка мебели")
-        slug: URL-friendly slug (e.g. "furniture-installation")
-        banner_image_url: Hero section background image URL
-        order: Display order (lower number = higher priority)
-        is_active: Whether category is visible on frontend
-    """
-
     title = models.CharField(
         max_length=200,
         verbose_name="Название категории",
@@ -684,8 +464,8 @@ class TutorialCategory(models.Model):
 
     class Meta:
         db_table = 'tutorial_categories'
-        verbose_name = 'Tutorial Category'
-        verbose_name_plural = 'Tutorial Categories'
+        verbose_name = 'Категория видеоуроков'
+        verbose_name_plural = 'Категории видеоуроков'
         ordering = ['order', 'title']
 
     def __str__(self):
@@ -693,18 +473,6 @@ class TutorialCategory(models.Model):
 
 
 class TutorialVideo(models.Model):
-    """
-    Tutorial Video Model (Видео урок в категории)
-
-    Each video belongs to a TutorialCategory and contains a YouTube video.
-
-    Fields:
-        category: Parent category (ForeignKey)
-        title: Video title (e.g. "Сборка шкафа-купе")
-        youtube_video_id: YouTube video ID (e.g. "dQw4w9WgXcQ")
-        order: Display order within category
-    """
-
     category = models.ForeignKey(
         TutorialCategory,
         on_delete=models.CASCADE,
@@ -731,32 +499,15 @@ class TutorialVideo(models.Model):
 
     class Meta:
         db_table = 'tutorial_videos'
-        verbose_name = 'Tutorial Video'
-        verbose_name_plural = 'Tutorial Videos'
+        verbose_name = 'Видеоурок'
+        verbose_name_plural = 'Видеоуроки'
         ordering = ['order', 'id']
 
     def __str__(self):
         return f"{self.title} ({self.category.title})"
 
 
-# ========================
-# Materials for Download
-# ========================
-
 class MaterialCategory(models.Model):
-    """
-    Material Category Model (Категория материалов для скачивания)
-
-    Examples: Каталоги, Сертификаты, Логотипы, Инструкции
-
-    Fields:
-        name: Category name (unique)
-        slug: URL-friendly slug
-        description: Optional category description
-        order: Display order
-        created_at: Timestamp
-    """
-
     name = models.CharField(
         max_length=100,
         unique=True,
@@ -780,8 +531,8 @@ class MaterialCategory(models.Model):
 
     class Meta:
         db_table = 'material_categories'
-        verbose_name = 'Material Category'
-        verbose_name_plural = 'Material Categories'
+        verbose_name = 'Категория материалов'
+        verbose_name_plural = 'Категории материалов'
         ordering = ['order', 'name']
 
     def save(self, *args, **kwargs):
@@ -794,23 +545,6 @@ class MaterialCategory(models.Model):
 
 
 class Material(models.Model):
-    """
-    Material Model (Материал для скачивания - PDF, картинки, архивы, etc.)
-
-    Materials that can be downloaded from the website.
-
-    Fields:
-        title: Material title (required, max 255 chars)
-        description: Optional long text description
-        file_url: URL to the file (required)
-        image_url: URL to the image for material display (required)
-        category: Foreign Key to MaterialCategory (required)
-        order: Manual sort order (number)
-        is_active: Checkbox for enabling/disabling (default True)
-        created_at: Auto timestamp
-        updated_at: Auto timestamp
-    """
-
     title = models.CharField(
         max_length=255,
         verbose_name="Название материала",
@@ -849,8 +583,8 @@ class Material(models.Model):
 
     class Meta:
         db_table = 'materials'
-        verbose_name = 'Material'
-        verbose_name_plural = 'Materials'
+        verbose_name = 'Материал'
+        verbose_name_plural = 'Материалы'
         ordering = ['order', '-created_at']
         indexes = [
             models.Index(fields=['is_active', 'order']),
